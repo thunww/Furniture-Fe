@@ -1,33 +1,40 @@
-# Build stage
-FROM node:18 as build
-
+# =======================================================
+# 🧱 STAGE 1: Build application
+# =======================================================
+FROM node:18-alpine AS build
 WORKDIR /app
 
-# Copy package.json only to generate a fresh package-lock.json
-COPY package.json ./
+# 1️⃣ Copy file package.json và package-lock.json trước
+# => Giúp Docker cache được layer cài dependency
+COPY package*.json ./
 
-# Clean up and install dependencies for the Docker environment
-RUN npm cache clean --force
-RUN npm install --force
+# 2️⃣ Cài dependency (clean install)
+# npm ci giúp build ổn định, không mang node_modules từ local
+RUN npm ci
 
-# Copy source code (excluding node_modules due to .dockerignore)
+# 3️⃣ Copy toàn bộ mã nguồn vào container
 COPY . .
 
-# Copy .env.docker to .env
-COPY .env.docker .env
+# 4️⃣ Build project (vite sẽ tạo thư mục dist)
+RUN npm run build
 
-# Build the app
-RUN npm run build -- --mode docker
 
-# Production stage
-FROM nginx:alpine
+# =======================================================
+# 🚀 STAGE 2: Run app với Nginx
+# =======================================================
+FROM nginx:stable-alpine
 
-# Copy built files from build stage
-COPY --from=build /app/dist /usr/share/nginx/html
+# 5️⃣ Xóa file cấu hình mặc định của Nginx
+RUN rm -f /etc/nginx/conf.d/default.conf
 
-# Copy nginx configuration
+# 6️⃣ Copy cấu hình SPA (giúp reload không 404)
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
+# 7️⃣ Copy thư mục build từ stage 1 sang
+COPY --from=build /app/dist /usr/share/nginx/html
+
+# 8️⃣ Expose port 80
 EXPOSE 80
 
-CMD ["nginx", "-g", "daemon off;"] 
+# 9️⃣ Lệnh mặc định
+CMD ["nginx", "-g", "daemon off;"]

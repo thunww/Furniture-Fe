@@ -287,55 +287,7 @@ const OrderManagement = () => {
     }
   };
 
-  const handleDeleteSelected = async () => {
-    if (selectedOrders.length === 0) {
-      Swal.fire({
-        title: "No Orders Selected",
-        text: "Please select at least one order to delete.",
-        icon: "warning",
-        confirmButtonColor: "#3085d6",
-      });
-      return;
-    }
-
-    const result = await Swal.fire({
-      title: "Delete Orders",
-      text: `Are you sure you want to delete ${selectedOrders.length} selected order(s)? This action cannot be undone.`,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#d33",
-      cancelButtonColor: "#3085d6",
-      confirmButtonText: "Yes, delete orders!",
-      cancelButtonText: "Cancel",
-      showLoaderOnConfirm: true,
-      preConfirm: async () => {
-        try {
-          const result = await orderApi.deleteSuborders(selectedOrders);
-          if (!result.success) {
-            throw new Error(result.message || "Failed to delete orders");
-          }
-          return result;
-        } catch (error) {
-          Swal.showValidationMessage(`Request failed: ${error.message}`);
-        }
-      },
-      allowOutsideClick: () => !Swal.isLoading(),
-    });
-
-    if (result.isConfirmed) {
-      Swal.fire({
-        title: "Deleted!",
-        text: `Successfully deleted ${result.value.deletedCount} order(s).`,
-        icon: "success",
-        confirmButtonColor: "#3085d6",
-      });
-
-      // Refresh order list
-      handleSearch(searchTerm);
-      // Reset selected orders
-      setSelectedOrders([]);
-    }
-  };
+  
 
   const handleExportData = async () => {
     try {
@@ -946,14 +898,7 @@ const OrderManagement = () => {
                   <CheckCircle className="mr-2 w-5 h-5" />
                   Process Selected Orders
                 </button>
-                <button
-                  onClick={handleDeleteSelected}
-                  className="flex items-center px-6 py-3 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl hover:from-red-700 hover:to-rose-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium shadow-sm hover:shadow-md"
-                  disabled={selectedOrders.length === 0}
-                >
-                  <AlertCircle className="mr-2 w-5 h-5" /> Delete Selected
-                  Orders
-                </button>
+                
                 <button
                   onClick={handleExportData}
                   className="flex items-center px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl hover:from-emerald-700 hover:to-teal-700 transition-all duration-200 font-medium shadow-sm hover:shadow-md"

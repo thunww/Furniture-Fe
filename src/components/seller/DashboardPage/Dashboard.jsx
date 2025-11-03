@@ -1,6 +1,7 @@
 import React, { Component } from "react";
 import ToDoList from "../DashboardPage/TodoList";
 import SalesAnalytics from "../DashboardPage/SalesAnalysis";
+import MonthlyRevenueChart from "../DashboardPage/MonthlyRevenueChart";
 import ShopeeAds from "../DashboardPage/Ads";
 import KOLOrders from "../DashboardPage/KolOrders";
 import Livestream from "../DashboardPage/Livestream";
@@ -18,6 +19,7 @@ class Dashboard extends Component {
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 w-full h-full">
           {/* Cột 1 */}
           <div className="col-span-2 space-y-4 w-full">
+            <MonthlyRevenueChart initialYear={2025} />
             <div className="p-4 bg-white rounded-lg shadow w-full overflow-hidden break-words">
               <ToDoList />
             </div>

@@ -83,17 +83,7 @@ const orderApi = {
     }
   },
 
-  // Xóa hàng loạt suborder
-  deleteSuborders: async (subOrderIds) => {
-    try {
-      const url = "/vendor/orders/bulk-delete"; // Endpoint to delete suborders
-      const response = await axiosClient.delete(url, { data: { subOrderIds } }); // Use { data: ... } for DELETE with body
-      return response.data;
-    } catch (error) {
-      console.error("Error deleting suborders:", error);
-      throw error;
-    }
-  },
+  
 
   exportOrders: async (params) => {
     try {

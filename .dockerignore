@@ -1,4 +1,8 @@
 node_modules
 dist
-.env
-package-lock.json 
+.git
+.gitignore
+Dockerfile
+Dockerfile.dev
+docker-compose.yml
+README.md
