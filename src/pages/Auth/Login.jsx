@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Mail, Lock, ArrowRight } from "lucide-react";
-import { useState, useEffect } from "react"; // Thêm useEffect
+import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { login, resetMessage } from "../../redux/authSlice";
 import { useNavigate } from "react-router-dom";
@@ -10,6 +10,8 @@ import { ToastContainer, toast } from "react-toastify";
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false); // ✅ thêm state rememberMe
+
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { message, error, isLoading } = useSelector((state) => state.auth);
@@ -46,8 +48,8 @@ const Login = () => {
       return;
     }
 
-    // Gọi action login
-    await dispatch(login({ email, password }));
+    // ✅ Gửi thêm rememberMe trong payload
+    await dispatch(login({ email, password, rememberMe }));
   };
 
   return (
@@ -91,7 +93,7 @@ const Login = () => {
                       onChange={(e) => setEmail(e.target.value)}
                       className="w-full pl-10 px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 focus:outline-none transition duration-150 bg-white shadow-sm"
                       placeholder="Enter your email"
-                      disabled={isLoading} // Vô hiệu hóa khi đang tải
+                      disabled={isLoading}
                     />
                   </div>
                 </div>
@@ -118,16 +120,19 @@ const Login = () => {
                       onChange={(e) => setPassword(e.target.value)}
                       className="w-full pl-10 px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 focus:outline-none transition duration-150 bg-white shadow-sm"
                       placeholder="Enter your password"
-                      disabled={isLoading} // Vô hiệu hóa khi đang tải
+                      disabled={isLoading}
                     />
                   </div>
                 </div>
 
+                {/* ✅ Remember Me */}
                 <div className="flex items-center">
                   <input
                     id="remember-me"
                     name="remember-me"
                     type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)} // ✅ cập nhật state
                     className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                   />
                   <label
@@ -141,13 +146,14 @@ const Login = () => {
                 <button
                   type="submit"
                   className="w-full py-3 px-4 flex items-center justify-center bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold rounded-lg hover:from-blue-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-300 shadow-md"
-                  disabled={isLoading} // Vô hiệu hóa khi đang tải
+                  disabled={isLoading}
                 >
                   {isLoading ? "Đang đăng nhập..." : "Login"}
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </button>
               </form>
 
+              {/* Phần social login và link signup giữ nguyên */}
               <div className="relative my-6">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-gray-200"></div>

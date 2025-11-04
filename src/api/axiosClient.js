@@ -1,50 +1,86 @@
 import axios from "axios";
 
-// Lấy cổng backend từ biến môi trường hoặc mặc định là 8080 cho local
-const BACKEND_PORT = import.meta.env.VITE_BACKEND_PORT || "8080";
-const API_URL =
-  import.meta.env.VITE_API_URL || `http://localhost:${BACKEND_PORT}/api/v1`;
-
+// ✅ Không cần VITE_API_URL nữa, dùng relative path
 const axiosClient = axios.create({
-  baseURL: API_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
-  withCredentials: true, // Cho phép gửi cookie trong request
-  timeout: 10000, // 10 seconds
+  baseURL: "/api/v1", // ✅ Proxy sẽ forward tới http://localhost:8080/api/v1
+  withCredentials: true,
+  headers: { "Content-Type": "application/json" },
+  timeout: 10000,
 });
 
-// Không cần interceptor nữa vì cookie sẽ tự động được gửi
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve();
+    }
+  });
+  failedQueue = [];
+};
+
+// =============================
+// 🔹 REQUEST INTERCEPTOR
+// =============================
 axiosClient.interceptors.request.use(
   (config) => {
+    console.log(`📤 ${config.method.toUpperCase()} ${config.url}`);
     return config;
   },
-  (error) => {
-    console.error("Request error:", error);
+  (error) => Promise.reject(error)
+);
+
+// =============================
+// 🔹 RESPONSE INTERCEPTOR
+// =============================
+axiosClient.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !originalRequest.url.includes("/auth/login") &&
+      !originalRequest.url.includes("/auth/refresh")
+    ) {
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then(() => axiosClient(originalRequest))
+          .catch((err) => Promise.reject(err));
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        console.log("⏳ Refreshing token...");
+
+        await axiosClient.post("/auth/refresh"); // ✅ Dùng relative path
+
+        console.log("✅ Token refreshed");
+        isRefreshing = false;
+        processQueue(null);
+
+        return axiosClient(originalRequest);
+      } catch (refreshError) {
+        console.error("❌ Refresh failed:", refreshError);
+        isRefreshing = false;
+        processQueue(refreshError);
+
+        localStorage.clear();
+        window.location.href = "/login";
+        return Promise.reject(refreshError);
+      }
+    }
+
     return Promise.reject(error);
   }
 );
-
-// // Response interceptor
-// axiosClient.interceptors.response.use(
-//   (response) => {
-//     return response;
-//   },
-//   (error) => {
-//     console.error("Response error:", error.response?.data || error);
-
-//     // Xử lý lỗi 401 Unauthorized
-//     if (error.response && error.response.status === 401) {
-//       localStorage.removeItem("accessToken");
-//       localStorage.removeItem("refreshToken");
-//       // Tùy chỉnh: có thể chuyển hướng đến trang đăng nhập
-//     }
-
-//     // Trả về thông báo lỗi từ backend
-//     return Promise.reject(
-//       error.response?.data?.message || error.message || "Lỗi kết nối đến server"
-//     );
-//   }
-// );
 
 export default axiosClient;
