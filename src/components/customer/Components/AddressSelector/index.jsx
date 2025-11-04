@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import provinceApi from "../../../../api/provinceApi";
 
 const AddressForm = ({ initialData = {}, onSubmit, onCancel }) => {
   const [provinces, setProvinces] = useState([]);
@@ -16,8 +17,8 @@ const AddressForm = ({ initialData = {}, onSubmit, onCancel }) => {
 
   // Fetch provinces when component mounts
   useEffect(() => {
-    fetch("https://provinces.open-api.vn/api/?depth=1")
-      .then((res) => res.json())
+    provinceApi
+      .getProvinces()
       .then((data) => {
         setProvinces(data);
       })
@@ -38,28 +39,26 @@ const AddressForm = ({ initialData = {}, onSubmit, onCancel }) => {
         setSelectedProvince(province.code.toString());
 
         // Fetch districts for the initial province
-        fetch(`https://provinces.open-api.vn/api/p/${province.code}?depth=2`)
-          .then((res) => res.json())
-          .then((data) => {
-            setDistricts(data.districts);
+        provinceApi
+          .getProvinceWithDistricts(province.code)
+          .then((districtsData) => {
+            setDistricts(districtsData);
 
             // Find district code
-            const district = data.districts.find(
+            const district = districtsData.find(
               (d) => d.name === initialData.district
             );
             if (district) {
               setSelectedDistrict(district.code.toString());
 
               // Fetch wards for the initial district
-              fetch(
-                `https://provinces.open-api.vn/api/d/${district.code}?depth=2`
-              )
-                .then((res) => res.json())
-                .then((data) => {
-                  setWards(data.wards);
+              provinceApi
+                .getDistrictWithWards(district.code)
+                .then((wardsData) => {
+                  setWards(wardsData);
 
                   // Find ward code
-                  const ward = data.wards.find(
+                  const ward = wardsData.find(
                     (w) => w.name === initialData.ward
                   );
                   if (ward) {
@@ -77,10 +76,10 @@ const AddressForm = ({ initialData = {}, onSubmit, onCancel }) => {
   // Fetch districts when province changes
   useEffect(() => {
     if (selectedProvince) {
-      fetch(`https://provinces.open-api.vn/api/p/${selectedProvince}?depth=2`)
-        .then((res) => res.json())
-        .then((data) => {
-          setDistricts(data.districts);
+      provinceApi
+        .getProvinceWithDistricts(selectedProvince)
+        .then((districtsData) => {
+          setDistricts(districtsData);
           setWards([]); // Reset wards when province changes
           setSelectedDistrict(""); // Reset district
           setSelectedWard(""); // Reset ward
@@ -97,9 +96,9 @@ const AddressForm = ({ initialData = {}, onSubmit, onCancel }) => {
   // Fetch wards when district changes
   useEffect(() => {
     if (selectedDistrict) {
-      fetch(`https://provinces.open-api.vn/api/d/${selectedDistrict}?depth=2`)
-        .then((res) => res.json())
-        .then((data) => setWards(data.wards))
+      provinceApi
+        .getDistrictWithWards(selectedDistrict)
+        .then((wardsData) => setWards(wardsData))
         .catch((err) => console.error("Failed to fetch wards:", err));
     } else {
       setWards([]);

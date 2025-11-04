@@ -1,39 +1,10 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Menu, Bell, User, Settings, LogOut } from "lucide-react";
+import { Menu, User, LogOut } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { logout } from "../../redux/authSlice";
 import { getShipperProfile } from "../../redux/shipperSlice";
 import { toast } from "react-toastify";
-
-const NotificationDropdown = ({ notifications, isOpen, onClose }) => {
-  if (!isOpen) return null;
-
-  return (
-    <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg py-2 z-50">
-      <div className="px-4 py-2 border-b">
-        <h3 className="font-semibold">Thông báo</h3>
-      </div>
-      <div className="max-h-96 overflow-y-auto">
-        {notifications.length > 0 ? (
-          notifications.map((notification, index) => (
-            <div
-              key={index}
-              className="px-4 py-3 hover:bg-gray-50 border-b last:border-0"
-            >
-              <p className="text-sm text-gray-800">{notification.message}</p>
-              <span className="text-xs text-gray-500">{notification.time}</span>
-            </div>
-          ))
-        ) : (
-          <div className="px-4 py-3 text-center text-gray-500">
-            Không có thông báo mới
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
 
 const UserDropdown = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
@@ -86,9 +57,7 @@ const UserDropdown = ({ isOpen, onClose }) => {
 };
 
 const ShipperHeader = ({ onMenuClick, currentPath }) => {
-  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const notificationRef = useRef(null);
   const userMenuRef = useRef(null);
   const dispatch = useDispatch();
   const { shipper, loading } = useSelector((state) => state.shipper);
@@ -97,28 +66,9 @@ const ShipperHeader = ({ onMenuClick, currentPath }) => {
     dispatch(getShipperProfile());
   }, [dispatch]);
 
-  // Mock notifications data
-  const notifications = [
-    {
-      message: "Bạn có đơn hàng mới #123456",
-      time: "5 phút trước"
-    },
-    {
-      message: "Đơn hàng #123455 đã được giao thành công",
-      time: "10 phút trước"
-    },
-    {
-      message: "Khách hàng đã đánh giá 5 sao cho đơn hàng #123454",
-      time: "30 phút trước"
-    }
-  ];
-
   // Handle click outside to close dropdowns
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
-        setIsNotificationOpen(false);
-      }
       if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
         setIsUserMenuOpen(false);
       }
@@ -161,24 +111,6 @@ const ShipperHeader = ({ onMenuClick, currentPath }) => {
 
         {/* Right side */}
         <div className="flex items-center space-x-2">
-          {/* Notifications */}
-          <div className="relative" ref={notificationRef}>
-            <button
-              onClick={() => setIsNotificationOpen(!isNotificationOpen)}
-              className="p-2 rounded-full text-white hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-400 relative"
-            >
-              <Bell size={20} />
-              {notifications.length > 0 && (
-                <span className="absolute top-1 right-1 w-2 h-2 bg-white rounded-full" />
-              )}
-            </button>
-            <NotificationDropdown
-              notifications={notifications}
-              isOpen={isNotificationOpen}
-              onClose={() => setIsNotificationOpen(false)}
-            />
-          </div>
-
           {/* User menu */}
           <div className="relative" ref={userMenuRef}>
             <button

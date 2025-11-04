@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import provinceApi from '../api/provinceApi';
 
 const AddressSelector = ({ onChange, onAddressChange, value = '', type = 'full' }) => {
   const [provinces, setProvinces] = useState([]);
@@ -28,8 +29,7 @@ const AddressSelector = ({ onChange, onAddressChange, value = '', type = 'full' 
   useEffect(() => {
     const fetchProvinces = async () => {
       try {
-        const response = await fetch('https://provinces.open-api.vn/api/p/');
-        const data = await response.json();
+        const data = await provinceApi.getProvinces();
         setProvinces(data);
       } catch (error) {
         console.error('Error fetching provinces:', error);
@@ -45,9 +45,8 @@ const AddressSelector = ({ onChange, onAddressChange, value = '', type = 'full' 
         try {
           const province = provinces.find(p => p.name === selectedProvince);
           if (province) {
-            const response = await fetch(`https://provinces.open-api.vn/api/p/${province.code}?depth=2`);
-            const data = await response.json();
-            setDistricts(data.districts || []);
+            const districtsData = await provinceApi.getProvinceWithDistricts(province.code);
+            setDistricts(districtsData || []);
           }
         } catch (error) {
           console.error('Error fetching districts:', error);
@@ -69,9 +68,8 @@ const AddressSelector = ({ onChange, onAddressChange, value = '', type = 'full' 
         try {
           const district = districts.find(d => d.name === selectedDistrict);
           if (district) {
-            const response = await fetch(`https://provinces.open-api.vn/api/d/${district.code}?depth=2`);
-            const data = await response.json();
-            setWards(data.wards || []);
+            const wardsData = await provinceApi.getDistrictWithWards(district.code);
+            setWards(wardsData || []);
           }
         } catch (error) {
           console.error('Error fetching wards:', error);
