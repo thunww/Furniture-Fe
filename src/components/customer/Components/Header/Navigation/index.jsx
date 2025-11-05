@@ -1,291 +1,221 @@
-import React from "react";
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import Button from "@mui/material/Button";
-import { Link } from "react-router-dom";
-import { FaAngleDown } from "react-icons/fa6";
-import { MdDeliveryDining } from "react-icons/md";
 import { HiOutlineMenuAlt1 } from "react-icons/hi";
 import { FaBars } from "react-icons/fa";
+import { MdDeliveryDining } from "react-icons/md";
 import { Store } from "lucide-react";
+
 import CategoryPanel from "./CategoryPanel";
 import "../Navigation/style.css";
+
+/**
+ * ====== DỮ LIỆU: dùng category_id thống nhất ======
+ * Map ID theo DB thực tế của bạn (giống với CategoryPanel.jsx)
+ */
+const PRODUCTS_COLS = [
+  {
+    heading: "Phòng khách",
+    items: [
+      { id: 1, label: "Sofa & Armchair" },
+      { id: 2, label: "Bàn trà" },
+      { id: 3, label: "Bàn góc" },
+      { id: 4, label: "Kệ / Bàn TV" },
+    ],
+  },
+  {
+    heading: "Phòng ăn",
+    items: [
+      { id: 5, label: "Bàn ăn" },
+      { id: 6, label: "Ghế ăn" },
+      { id: 7, label: "Ghế bar" },
+    ],
+  },
+  {
+    heading: "Phòng ngủ",
+    items: [
+      { id: 8, label: "Giường ngủ" },
+      { id: 9, label: "Tủ áo" },
+      { id: 10, label: "Táp đầu giường" },
+      { id: 11, label: "Nệm" },
+      { id: 12, label: "Bàn trang điểm" },
+    ],
+  },
+  {
+    heading: "Làm việc & Lưu trữ",
+    items: [
+      { id: 30, label: "Bàn làm việc" },
+      { id: 31, label: "Ghế công thái học" },
+      { id: 13, label: "Kệ sách" },
+      { id: 15, label: "Tủ / Kệ đa năng" },
+    ],
+  },
+  {
+    heading: "Trang trí",
+    items: [
+      { id: 16, label: "Đèn trang trí" },
+      { id: 20, label: "Gương" },
+      { id: 19, label: "Tranh treo" },
+      { id: 21, label: "Bình / Lọ" },
+      { id: 24, label: "Tượng / Khung hình" },
+      { id: 26, label: "Gối & Thảm" },
+      { id: 27, label: "Nến & phụ kiện" },
+    ],
+  },
+];
+
+// (Tùy chọn) Menu phòng – không bắt buộc dùng tới trong ví dụ này
+const ROOMS = [
+  { label: "Phòng khách", categoryId: 1 },
+  { label: "Phòng ăn", categoryId: 2 },
+  { label: "Phòng ngủ", categoryId: 3 },
+  { label: "Phòng làm việc", categoryId: 30 }, // chỉnh theo ID thực
+  { label: "Phòng bếp", categoryId: 5 },
+  { label: "Ngoại thất", categoryId: 28 }, // nếu có
+];
 
 const Navigation = () => {
   const [isOpenCatPanel, setIsOpenCatPanel] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const mobileMenuRef = useRef(null);
+  const navigate = useNavigate();
 
-  const openCategoryPanel = () => {
-    setIsOpenCatPanel(true);
+  const openCategoryPanel = () => setIsOpenCatPanel(true);
+
+  // Dùng category_id để điều hướng (đồng bộ với Drawer)
+  const handleGoCategoryById = (id) => {
+    if (!id) return;
+    navigate(`/search?category_id=${id}`);
   };
 
-  // Đóng menu khi click ra ngoài
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (
-        mobileMenuRef.current &&
-        !mobileMenuRef.current.contains(event.target)
-      ) {
+    const handleClickOutside = (e) => {
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(e.target)) {
         setIsMobileMenuOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   return (
     <>
-      <nav className="relative border-b border-gray-200">
+      <nav className="relative border-b border-gray-200 bg-white">
+        {/* ===== Desktop ===== */}
         <div className="container px-4 sm:px-6 hidden md:flex items-center justify-between">
-          <div className="col1 w-full md:w-1/5 lg:w-1/5">
-            <Button
-              className="!text-black gap-2 w-full !py-3 !text-xs sm:!text-sm"
-              onClick={openCategoryPanel}
-            >
-              <HiOutlineMenuAlt1 className="text-[16px] flex-shrink-0" />
-              <span className="truncate">Shop by Categories</span>
-              <FaAngleDown className="text-[12px] ml-auto flex-shrink-0" />
-            </Button>
-          </div>
-          <div className="col2 w-full md:w-3/5 lg:w-3/5 ">
-            <ul className="flex items-center gap-2 md:gap-3 lg:gap-5 nav whitespace-nowrap">
-              <li className="list-none">
-                <Link
-                  to="/"
-                  className="link transition text-[13px] md:text-[14px] lg:text-[15px] font-[500]"
-                >
-                  <Button className="link transition !font-[500] !text-black hover:!text-[red] !py-3 !px-2 md:!px-3 !min-w-0 !text-xs sm:!text-sm">
-                    Home
-                  </Button>
-                </Link>
-              </li>
-              <li className="list-none relative">
-                <Link
-                  to="/"
-                  className="link transition text-[13px] md:text-[14px] lg:text-[15px] font-[500]"
-                >
-                  <Button className="link transition !font-[500] !text-black hover:!text-[red] !py-3 !px-2 md:!px-3 !min-w-0 !text-xs sm:!text-sm">
-                    Fashion
-                  </Button>
-                </Link>
+          {/* Trái: nút mở drawer danh mục tổng */}
+          <Button
+            className="!text-black flex items-center gap-2 !py-3"
+            onClick={openCategoryPanel}
+          >
+            <HiOutlineMenuAlt1 className="text-[18px]" />
+            <span className="truncate text-sm">Danh mục nội thất</span>
+          </Button>
 
-                <div className="submenu absolute top-[120%] left-[0%] min-w-[200px] bg-white shadow-md opacity-0 transition-all z-10">
-                  <ul>
-                    <li className="list-none w-full">
-                      <Link to="/" className="w-full">
-                        <Button className="!text-[rgba(0,0,0,0.8)] w-full !text-left !justify-start !rounded-none !text-xs sm:!text-sm">
-                          Men
-                        </Button>
-                      </Link>
-                    </li>
-                    <li className="list-none w-full">
-                      <Link to="/" className="w-full">
-                        <Button className="!text-[rgba(0,0,0,0.8)] w-full !text-left !justify-start !rounded-none !text-xs sm:!text-sm">
-                          Women
-                        </Button>
-                      </Link>
-                    </li>
-                    <li className="list-none w-full">
-                      <Link to="/" className="w-full">
-                        <Button className="!text-[rgba(0,0,0,0.8)] w-full !text-left !justify-start !rounded-none !text-xs sm:!text-sm">
-                          Kids
-                        </Button>
-                      </Link>
-                    </li>
-                    <li className="list-none w-full">
-                      <Link to="/" className="w-full">
-                        <Button className="!text-[rgba(0,0,0,0.8)] w-full !text-left !justify-start !rounded-none !text-xs sm:!text-sm">
-                          Boys
-                        </Button>
-                      </Link>
-                    </li>
-                    <li className="list-none w-full">
-                      <Link to="/" className="w-full">
-                        <Button className="!text-[rgba(0,0,0,0.8)] w-full !text-left !justify-start !rounded-none !text-xs sm:!text-sm">
-                          Girls
-                        </Button>
-                      </Link>
-                    </li>
-                  </ul>
+          {/* Giữa: 1 mục lớn SẢN PHẨM */}
+          <ul className="flex items-center gap-8">
+            <li className="relative group">
+              <button className="text-[16px] font-semibold tracking-wide hover:text-amber-700 flex items-center gap-1">
+                SẢN PHẨM <span className="text-amber-600">▾</span>
+              </button>
+
+              {/* Mega menu Sản phẩm */}
+              <div className="megaMenu absolute left-0 top-full w-[min(1100px,92vw)] bg-white shadow-xl border z-[60] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6 p-6">
+                  {PRODUCTS_COLS.map((col) => (
+                    <div key={col.heading}>
+                      <h4 className="text-[15px] font-semibold mb-2">
+                        {col.heading}
+                      </h4>
+                      <ul className="space-y-2">
+                        {col.items.map((it) => (
+                          <li key={it.id}>
+                            <button
+                              type="button"
+                              onClick={() => handleGoCategoryById(it.id)}
+                              className="text-[14px] text-gray-700 hover:text-amber-700"
+                            >
+                              {it.label}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
                 </div>
-              </li>
-              <li className="list-none">
-                <Link
-                  to="/"
-                  className="link transition text-[13px] md:text-[14px] lg:text-[15px] font-[500]"
-                >
-                  <Button className="link transition !font-[500] !text-black hover:!text-[red] !py-3 !px-2 md:!px-3 !min-w-0 !text-xs sm:!text-sm">
-                    Electronics
-                  </Button>
-                </Link>
-              </li>
-              <li className="list-none">
-                <Link
-                  to="/"
-                  className="link transition text-[13px] md:text-[14px] lg:text-[15px] font-[500]"
-                >
-                  <Button className="link transition !font-[500] !text-black hover:!text-[red] !py-3 !px-2 md:!px-3 !min-w-0 !text-xs sm:!text-sm">
-                    Bags
-                  </Button>
-                </Link>
-              </li>
-              <li className="list-none">
-                <Link
-                  to="/"
-                  className="link transition text-[13px] md:text-[14px] lg:text-[15px] font-[500]"
-                >
-                  <Button className="link transition !font-[500] !text-black hover:!text-[red] !py-3 !px-2 md:!px-3 !min-w-0 !text-xs sm:!text-sm">
-                    Footwear
-                  </Button>
-                </Link>
-              </li>
-              <li className="list-none">
-                <Link
-                  to="/"
-                  className="link transition text-[13px] md:text-[14px] lg:text-[15px] font-[500]"
-                >
-                  <Button className="link transition !font-[500] !text-black hover:!text-[red] !py-3 !px-2 md:!px-3 !min-w-0 !text-xs sm:!text-sm">
-                    Groceries
-                  </Button>
-                </Link>
-              </li>
-              <li className="list-none">
-                <Link
-                  to="/"
-                  className="link transition text-[13px] md:text-[14px] lg:text-[15px] font-[500]"
-                >
-                  <Button className="link transition !font-[500] !text-black hover:!text-[red] !py-3 !px-2 md:!px-3 !min-w-0 !text-xs sm:!text-sm">
-                    Beauty
-                  </Button>
-                </Link>
-              </li>
-              <li className="list-none">
-                <Link
-                  to="/"
-                  className="link transition text-[13px] md:text-[14px] lg:text-[15px] font-[500]"
-                >
-                  <Button className="link transition !font-[500] !text-black hover:!text-[red] !py-3 !px-2 md:!px-3 !min-w-0 !text-xs sm:!text-sm">
-                    Wellness
-                  </Button>
-                </Link>
-              </li>
-            </ul>
-          </div>
-          <div className="col3 w-full md:w-1/5 lg:w-1/5 hidden lg:block">
-            <div className="flex items-center gap-4 justify-end">
-              <Link to="/shipper/register">
-                <p className="text-[12px] md:text-[13px] lg:text-[14px] font-[500] flex items-center gap-2 mb-0 mt-0 justify-end free-delivery-link">
-                  <MdDeliveryDining className="text-[16px] flex-shrink-0" />
-                  <span className="truncate">Go Shipper</span>
-                </p>
-              </Link>
-              <Link to="/register-vendor">
-                <p className="text-[12px] md:text-[13px] lg:text-[14px] font-[500] flex items-center gap-2 mb-0 mt-0 justify-end free-delivery-link">
-                  <Store className="w-[16px] h-[16px] flex-shrink-0" />
-                  <span className="truncate">Become a Vendor</span>
-                </p>
-              </Link>
-            </div>
+              </div>
+            </li>
+          </ul>
+
+          {/* Phải: giữ nguyên */}
+          <div className="hidden lg:flex items-center gap-6">
+            <Link to="/shipper/register" className="nav-link">
+              <MdDeliveryDining />
+              <span>Go Shipper</span>
+            </Link>
+            <Link to="/register-vendor" className="nav-link">
+              <Store />
+              <span>Become a Vendor</span>
+            </Link>
           </div>
         </div>
 
-        {/* Mobile Navigation */}
+        {/* ===== Mobile ===== */}
         <div
           className="md:hidden container px-4 py-2 flex items-center justify-between"
           ref={mobileMenuRef}
         >
-          <Button
-            className="!text-black !min-w-0 !p-2"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          >
+          <Button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
             <FaBars className="text-lg" />
           </Button>
 
-          <Button
-            className="!text-black !min-w-0 !p-2 flex items-center gap-1"
-            onClick={openCategoryPanel}
-          >
+          <Button onClick={openCategoryPanel} className="flex items-center gap-1">
             <HiOutlineMenuAlt1 className="text-lg" />
-            <span className="text-xs">Categories</span>
+            <span className="text-xs">Danh mục</span>
           </Button>
 
-          {/* Mobile Menu */}
           {isMobileMenuOpen && (
-            <div className="absolute top-full left-0 w-full bg-white shadow-md z-50 max-h-[70vh] overflow-auto">
-              <ul className="py-2">
-                <li className="border-b border-gray-100">
-                  <Link
-                    to="/"
-                    className="block px-4 py-2 text-sm hover:bg-gray-50"
-                  >
-                    Home
-                  </Link>
-                </li>
-                <li className="border-b border-gray-100">
-                  <Link
-                    to="/"
-                    className="block px-4 py-2 text-sm hover:bg-gray-50"
-                  >
-                    Fashion
-                  </Link>
-                </li>
-                <li className="border-b border-gray-100">
-                  <Link
-                    to="/"
-                    className="block px-4 py-2 text-sm hover:bg-gray-50"
-                  >
-                    Electronics
-                  </Link>
-                </li>
-                <li className="border-b border-gray-100">
-                  <Link
-                    to="/"
-                    className="block px-4 py-2 text-sm hover:bg-gray-50"
-                  >
-                    Bags
-                  </Link>
-                </li>
-                <li className="border-b border-gray-100">
-                  <Link
-                    to="/"
-                    className="block px-4 py-2 text-sm hover:bg-gray-50"
-                  >
-                    Footwear
-                  </Link>
-                </li>
-                <li className="border-b border-gray-100">
-                  <Link
-                    to="/"
-                    className="block px-4 py-2 text-sm hover:bg-gray-50"
-                  >
-                    Groceries
-                  </Link>
-                </li>
-                <li className="border-b border-gray-100">
-                  <Link
-                    to="/"
-                    className="block px-4 py-2 text-sm hover:bg-gray-50"
-                  >
-                    Beauty
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/"
-                    className="block px-4 py-2 text-sm hover:bg-gray-50"
-                  >
-                    Wellness
-                  </Link>
-                </li>
-              </ul>
+            <div className="mobileMenu bg-white shadow-xl border absolute left-0 top-full w-full z-[70] max-h-[70vh] overflow-auto">
+              {/* Nhóm lớn: SẢN PHẨM */}
+              <details open className="border-b">
+                <summary className="py-3 px-4 text-sm font-semibold">
+                  SẢN PHẨM
+                </summary>
+                {PRODUCTS_COLS.map((col) => (
+                  <details key={col.heading} className="border-t">
+                    <summary className="py-2 px-5 text-sm font-medium">
+                      {col.heading}
+                    </summary>
+                    <ul className="pl-8 pb-3 space-y-2">
+                      {col.items.map((it) => (
+                        <li key={it.id}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleGoCategoryById(it.id);
+                              setIsMobileMenuOpen(false);
+                            }}
+                            className="text-sm block text-left w-full py-1 hover:text-amber-700"
+                          >
+                            {it.label}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                ))}
+              </details>
+
+              <div className="flex justify-between px-4 py-3 text-sm">
+                <Link to="/shipper/register">Go Shipper</Link>
+                <Link to="/register-vendor">Become a Vendor</Link>
+              </div>
             </div>
           )}
         </div>
       </nav>
 
-      {/* category component */}
+      {/* Drawer danh mục tổng */}
       <CategoryPanel
         isOpenCatPanel={isOpenCatPanel}
         setIsOpenCatPanel={setIsOpenCatPanel}

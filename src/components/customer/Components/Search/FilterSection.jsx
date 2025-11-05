@@ -33,31 +33,43 @@ const FilterSection = ({ onFilter, filters }) => {
   const dispatch = useDispatch();
   const { categories } = useSelector((state) => state.categories);
 
+  // Luôn là mảng string id
   const [selectedCategories, setSelectedCategories] = useState(
     Array.isArray(filters.categoryId) ? filters.categoryId.map(String) : []
   );
   const [showAllCategories, setShowAllCategories] = useState(false);
 
+  // Chỉ fetch category khi chưa có
   useEffect(() => {
-    dispatch(fetchAllCategories());
-  }, [dispatch]);
+    if (!categories || categories.length === 0) {
+      dispatch(fetchAllCategories());
+    }
+  }, [categories, dispatch]);
 
+  // Đồng bộ state khi URL thay đổi
   useEffect(() => {
     setSelectedCategories(
       Array.isArray(filters.categoryId) ? filters.categoryId.map(String) : []
     );
   }, [filters.categoryId]);
 
+  // Radio 1 lựa chọn (chọn lại là bỏ chọn về "Tất cả")
   const handleCategoryChange = (categoryId) => {
     const id = String(categoryId);
     let newSelected;
     if (selectedCategories.includes(id)) {
+      // bấm lại -> về tất cả
       newSelected = [];
     } else {
       newSelected = [id];
     }
     setSelectedCategories(newSelected);
-    onFilter({ categoryId: newSelected });
+    onFilter({ categoryId: newSelected }); // SearchPage sẽ chuẩn hóa sang category_id trên URL
+  };
+
+  const handleClearCategory = () => {
+    setSelectedCategories([]);
+    onFilter({ categoryId: [] });
   };
 
   const handlePriceRangeChange = (range) => {
@@ -77,15 +89,33 @@ const FilterSection = ({ onFilter, filters }) => {
 
   const displayedCategories = showAllCategories
     ? categories
-    : categories.slice(0, 5);
+    : (categories || []).slice(0, 5);
+
+  const isRangeSelected = (range) =>
+    String(filters.minPrice ?? "") === String(range.min) &&
+    String(filters.maxPrice ?? "") === String(range.max);
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg">
       {/* Danh mục */}
       <div className="p-4 border-b border-gray-100">
         <h3 className="text-sm font-medium text-gray-900 mb-3">Danh mục</h3>
+
         <div className="space-y-2 max-h-64 overflow-y-auto">
-          {displayedCategories.length > 0 ? (
+          {/* Tất cả */}
+          <label className="flex items-center text-sm text-gray-700 cursor-pointer hover:text-blue-600">
+            <input
+              type="radio"
+              name="category"
+              value=""
+              checked={selectedCategories.length === 0}
+              onChange={handleClearCategory}
+              className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 mr-2"
+            />
+            Tất cả
+          </label>
+
+          {displayedCategories && displayedCategories.length > 0 ? (
             displayedCategories.map((cat) => (
               <label
                 key={cat.category_id}
@@ -107,7 +137,7 @@ const FilterSection = ({ onFilter, filters }) => {
           )}
         </div>
 
-        {categories.length > 5 && (
+        {categories && categories.length > 5 && (
           <button
             onClick={toggleShowAllCategories}
             className="mt-3 text-sm text-blue-600 hover:text-blue-800"
@@ -122,26 +152,21 @@ const FilterSection = ({ onFilter, filters }) => {
       <div className="p-4 border-b border-gray-100">
         <h3 className="text-sm font-medium text-gray-900 mb-3">Khoảng giá</h3>
         <div className="space-y-2">
-          {priceRanges.map((range, index) => {
-            const isSelected =
-              String(filters.minPrice ?? "") === String(range.min) &&
-              String(filters.maxPrice ?? "") === String(range.max);
-            return (
-              <label
-                key={index}
-                className="flex items-center text-sm text-gray-700 cursor-pointer hover:text-blue-600"
-              >
-                <input
-                  type="radio"
-                  name="priceRange"
-                  checked={isSelected}
-                  onChange={() => handlePriceRangeChange(range)}
-                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 mr-2"
-                />
-                {range.label}
-              </label>
-            );
-          })}
+          {priceRanges.map((range, index) => (
+            <label
+              key={index}
+              className="flex items-center text-sm text-gray-700 cursor-pointer hover:text-blue-600"
+            >
+              <input
+                type="radio"
+                name="priceRange"
+                checked={isRangeSelected(range)}
+                onChange={() => handlePriceRangeChange(range)}
+                className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 mr-2"
+              />
+              {range.label}
+            </label>
+          ))}
         </div>
       </div>
 
