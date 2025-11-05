@@ -36,11 +36,10 @@ const CustomerLayout = () => {
       {/* Scroll to Top Button */}
       <button
         onClick={scrollToTop}
-        className={`fixed bottom-8 right-8 bg-red-600 text-white p-3 rounded-full shadow-lg z-40 transition-all duration-300 ${
-          showScrollTop
-            ? "opacity-100 translate-y-0"
-            : "opacity-0 translate-y-10 pointer-events-none"
-        }`}
+        className={`fixed bottom-8 right-8 bg-red-600 text-white p-3 rounded-full shadow-lg z-40 transition-all duration-300 ${showScrollTop
+          ? "opacity-100 translate-y-0"
+          : "opacity-0 translate-y-10 pointer-events-none"
+          }`}
       >
         <svg
           width="20"

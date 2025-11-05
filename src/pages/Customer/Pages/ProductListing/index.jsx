@@ -4,25 +4,17 @@ import Pagination from "@mui/material/Pagination";
 import ProductItem from "../../../../components/customer/Components/ProductItem";
 
 const ProductListing = () => {
-  const {
-    searchResults: products = [],
-    loading,
-    error,
-  } = useSelector((state) => state.products);
+  const { searchResults: products = [], loading, error } = useSelector((state) => state.products);
   const [currentPage, setCurrentPage] = useState(1);
   const productsPerPage = 12;
 
-  // Kiểm tra products là mảng
   const activeProducts = Array.isArray(products)
-    ? products.filter((product) => product.status === "active")
+    ? products.filter((p) => p?.status === "active")
     : [];
 
   const indexOfLastProduct = currentPage * productsPerPage;
   const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
-  const currentProducts = activeProducts.slice(
-    indexOfFirstProduct,
-    indexOfLastProduct
-  );
+  const currentProducts = activeProducts.slice(indexOfFirstProduct, indexOfLastProduct);
 
   const handlePageChange = (event, value) => {
     setCurrentPage(value);
@@ -38,17 +30,14 @@ const ProductListing = () => {
               <ProductItem key={product.product_id} product={product} />
             ))
           ) : (
-            <div className="text-center text-gray-500 col-span-full py-10">
-              Không tìm thấy sản phẩm
-            </div>
+            <div className="text-center text-gray-500 col-span-full py-10">Không tìm thấy sản phẩm</div>
           )}
         </div>
 
-        {/* Pagination */}
-        {products.length > productsPerPage && (
+        {activeProducts.length > productsPerPage && (
           <div className="flex justify-center mt-6">
             <Pagination
-              count={Math.ceil(products.length / productsPerPage)}
+              count={Math.ceil(activeProducts.length / productsPerPage)}
               page={currentPage}
               onChange={handlePageChange}
               color="primary"
