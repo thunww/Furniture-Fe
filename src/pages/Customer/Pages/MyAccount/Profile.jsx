@@ -48,7 +48,7 @@ const ProfileField = ({ icon, label, value, isEditing, onChange, name }) => {
         ) : name === "gender" ? (
           <select
             className="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm bg-white transition-all duration-200"
-            value={value || "male"} // Đặt giá trị mặc định là "male"
+            value={value || "male"}
             onChange={(e) => onChange(name, e.target.value)}
           >
             <option value="male">Male</option>
@@ -78,6 +78,7 @@ const Profile = () => {
   const dispatch = useDispatch();
   const userId = useSelector((state) => state.auth.user?.user_id);
   const user = useSelector((state) => state.admin.selectedUser);
+  const isAuthLoading = useSelector((state) => state.auth.isLoading);
   const [isEditing, setIsEditing] = useState(false);
   const [profileData, setProfileData] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
@@ -96,7 +97,7 @@ const Profile = () => {
         last_name: user.last_name || "",
         phone: user.phone || "",
         date_of_birth: user.date_of_birth || "",
-        gender: user.gender || "male", // Đặt mặc định là "male"
+        gender: user.gender || "male",
         profile_picture: user.profile_picture || "",
       });
     }
@@ -168,6 +169,7 @@ const Profile = () => {
       dispatch(updateUser({ user_id: userId, ...filteredData }));
     }
     setIsEditing(false);
+    setSelectedImage(null);
   };
 
   const handleCancel = () => {
@@ -177,14 +179,15 @@ const Profile = () => {
         last_name: user.last_name || "",
         phone: user.phone || "",
         date_of_birth: user.date_of_birth || "",
-        gender: user.gender || "male", // Đặt mặc định là "male"
+        gender: user.gender || "male",
         profile_picture: user.profile_picture || "",
       });
     }
+    setSelectedImage(null);
     setIsEditing(false);
   };
 
-  if (!profileData) {
+  if (isAuthLoading || !userId || !profileData) {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>

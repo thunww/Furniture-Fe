@@ -1,52 +1,53 @@
 import axios from "axios";
 
-// ✅ Không cần VITE_API_URL nữa, dùng relative path
+const BACKEND_PORT = import.meta.env.VITE_BACKEND_PORT || "8080";
+const API_URL =
+  import.meta.env.VITE_API_URL || `http://localhost:${BACKEND_PORT}/api/v1`;
+
 const axiosClient = axios.create({
-  baseURL: "/api/v1", // ✅ Proxy sẽ forward tới http://localhost:8080/api/v1
-  withCredentials: true,
-  headers: { "Content-Type": "application/json" },
+  baseURL: API_URL,
+  headers: {
+    "Content-Type": "application/json",
+  },
+  withCredentials: true, // Gửi cookie tự động
   timeout: 10000,
 });
 
-let isRefreshing = false;
-let failedQueue = [];
-
-const processQueue = (error) => {
-  failedQueue.forEach((prom) => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve();
-    }
-  });
-  failedQueue = [];
-};
-
-// =============================
-// 🔹 REQUEST INTERCEPTOR
-// =============================
+// ========= REQUEST =========
 axiosClient.interceptors.request.use(
   (config) => {
-    console.log(`📤 ${config.method.toUpperCase()} ${config.url}`);
+    // có thể thêm Authorization nếu cần (token trong localStorage)
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// =============================
-// 🔹 RESPONSE INTERCEPTOR
-// =============================
+// ========= RESPONSE =========
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, data) => {
+  failedQueue.forEach((prom) => {
+    error ? prom.reject(error) : prom.resolve(data);
+  });
+  failedQueue = [];
+};
+
 axiosClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    if (
-      error.response?.status === 401 &&
-      !originalRequest._retry &&
-      !originalRequest.url.includes("/auth/login") &&
-      !originalRequest.url.includes("/auth/refresh")
-    ) {
+    // không có response (network fail)
+    if (!error.response) return Promise.reject(error);
+
+    // Nếu là refresh-token endpoint bị lỗi → không retry
+    if (originalRequest.url === "/auth/refresh-token") {
+      return Promise.reject(error);
+    }
+
+    // lỗi 401
+    if (error.response.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
@@ -59,23 +60,17 @@ axiosClient.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        console.log("⏳ Refreshing token...");
+        // gọi refresh token endpoint
+        await axiosClient.post("/auth/refresh-token");
 
-        await axiosClient.post("/auth/refresh"); // ✅ Dùng relative path
-
-        console.log("✅ Token refreshed");
-        isRefreshing = false;
-        processQueue(null);
-
+        processQueue(null, true);
         return axiosClient(originalRequest);
-      } catch (refreshError) {
-        console.error("❌ Refresh failed:", refreshError);
+      } catch (err) {
+        processQueue(err, null);
+        // Để Redux xử lý việc redirect, không dùng window.location.href
+        return Promise.reject(err);
+      } finally {
         isRefreshing = false;
-        processQueue(refreshError);
-
-        localStorage.clear();
-        window.location.href = "/login";
-        return Promise.reject(refreshError);
       }
     }
 

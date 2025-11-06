@@ -2,6 +2,7 @@ import React, { useContext, useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { logout } from "../../../../redux/authSlice";
+import { fetchUserById } from "../../../../redux/adminSlice"; // ← THÊM IMPORT
 import Search from "../Search/Search";
 import Button from "@mui/material/Button";
 import Badge from "@mui/material/Badge";
@@ -42,6 +43,7 @@ const Header = () => {
   const dispatch = useDispatch();
   const { isAuthenticated, roles } = useSelector((state) => state.auth);
   const user = useSelector((state) => state.admin.selectedUser);
+  const userId = useSelector((state) => state.auth.user?.user_id); // ← THÊM
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const menuRef = useRef(null);
 
@@ -52,6 +54,13 @@ const Header = () => {
     : 0;
 
   const { orders, loading, error } = useSelector((state) => state.orders);
+
+  // ← THÊM useEffect này để fetch user khi có userId
+  useEffect(() => {
+    if (userId && !user) {
+      dispatch(fetchUserById(userId));
+    }
+  }, [dispatch, userId, user]);
 
   useEffect(() => {
     dispatch(fetchAllOrders());

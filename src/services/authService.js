@@ -15,20 +15,18 @@ const authService = {
     await authApi.logout();
   },
 
-  getProfile: async () => {
-    const response = await authApi.getProfile();
-    return response.data;
-  },
-
   getUserById: async (userId) => {
     if (!userId) throw new Error("userId is required");
     const response = await authApi.getUserById(userId);
     return response.data;
   },
-
-  refreshToken: async () => {
+  refresh: async () => {
     const response = await authApi.refresh();
-    return response.data;
+    return response.data.user;
+  },
+  getProfile: async () => {
+    const response = await authApi.getProfile();
+    return response.data.user;
   },
 };
 

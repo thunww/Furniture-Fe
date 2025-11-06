@@ -3,12 +3,15 @@ import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import AccountSidebar from "../../../../components/customer/Components/AccountSidebar";
 import { fetchUserById } from "../../../../redux/adminSlice";
+
 const MyAccount = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch();
   const user = useSelector((state) => state.admin.selectedUser);
-  const userId = useSelector((state) => state.auth.user?.user_id); // Get user_id from auth state
+  const userId = useSelector((state) => state.auth.user?.user_id);
+  const isAuthLoading = useSelector((state) => state.auth.isLoading); // ← THÊM
+
   useEffect(() => {
     if (userId) {
       dispatch(fetchUserById(userId));
@@ -21,8 +24,21 @@ const MyAccount = () => {
     }
   }, [user, navigate, location]);
 
+  // ← THÊM: Đợi auth load xong
+  if (isAuthLoading || !userId) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
   if (!user) {
-    return <div>Đang tải...</div>;
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
   }
 
   return (
