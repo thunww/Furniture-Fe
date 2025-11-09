@@ -9,14 +9,14 @@ const axiosClient = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  withCredentials: true, // Gửi cookie tự động
+  withCredentials: true, // Tự động gửi cookie (accessToken, refreshToken)
   timeout: 10000,
 });
 
 // ========= REQUEST =========
 axiosClient.interceptors.request.use(
   (config) => {
-    // có thể thêm Authorization nếu cần (token trong localStorage)
+    // Có thể thêm Authorization header nếu cần
     return config;
   },
   (error) => Promise.reject(error)
@@ -38,17 +38,25 @@ axiosClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // không có response (network fail)
+    // Nếu không có phản hồi (network lỗi)
     if (!error.response) return Promise.reject(error);
 
-    // Nếu là refresh-token endpoint bị lỗi → không retry
+    // Không xử lý lỗi từ chính endpoint refresh-token
     if (originalRequest.url === "/auth/refresh-token") {
       return Promise.reject(error);
     }
 
-    // lỗi 401
+    // Nếu là 401 mà chưa login → đừng gọi refresh
+    const hasRefresh = document.cookie.includes("refreshToken=");
+    if (!hasRefresh) {
+      // 🚫 Không có refreshToken cookie, bỏ qua retry
+      return Promise.reject(error);
+    }
+
+    // Nếu là 401 (Unauthorized)
     if (error.response.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
+        // Nếu đang có request refresh khác → chờ xong rồi retry
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         })
@@ -60,14 +68,15 @@ axiosClient.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        // gọi refresh token endpoint
+        // Gọi refresh token endpoint
         await axiosClient.post("/auth/refresh-token");
 
+        // Sau khi refresh xong → retry lại request cũ
         processQueue(null, true);
         return axiosClient(originalRequest);
       } catch (err) {
         processQueue(err, null);
-        // Để Redux xử lý việc redirect, không dùng window.location.href
+        // Để Redux hoặc FE xử lý logout, không redirect ở đây
         return Promise.reject(err);
       } finally {
         isRefreshing = false;

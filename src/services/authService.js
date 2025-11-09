@@ -1,8 +1,12 @@
 import authApi from "../api/authApi";
 
 const authService = {
-  login: async (userData) => {
-    const response = await authApi.login(userData);
+  login: async (userData, captchaToken = null) => {
+    // ← THÊM captchaToken parameter
+    const response = await authApi.login({
+      ...userData,
+      captchaToken, // ← Gửi captchaToken cùng với userData
+    });
     return response.data;
   },
 
@@ -20,10 +24,12 @@ const authService = {
     const response = await authApi.getUserById(userId);
     return response.data;
   },
+
   refresh: async () => {
     const response = await authApi.refresh();
     return response.data.user;
   },
+
   getProfile: async () => {
     const response = await authApi.getProfile();
     return response.data.user;

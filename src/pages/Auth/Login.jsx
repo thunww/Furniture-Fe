@@ -1,20 +1,24 @@
 import { Link } from "react-router-dom";
-import { Mail, Lock, ArrowRight } from "lucide-react";
+import { Mail, Lock, ArrowRight, Shield, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
 import { login, resetMessage } from "../../redux/authSlice";
 import { useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
-// import "react-toastify/dist/ReactToastify.css";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [rememberMe, setRememberMe] = useState(false); // ✅ thêm state rememberMe
+  const [rememberMe, setRememberMe] = useState(false);
+  const [isExecutingCaptcha, setIsExecutingCaptcha] = useState(false);
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { message, error, isLoading } = useSelector((state) => state.auth);
+  const { executeRecaptcha } = useGoogleReCaptcha();
+
+  const { message, error, isLoading, needCaptcha, isLocked, attempts } =
+    useSelector((state) => state.auth);
 
   useEffect(() => {
     dispatch(resetMessage());
@@ -48,16 +52,40 @@ const Login = () => {
       return;
     }
 
-    // ✅ Gửi thêm rememberMe trong payload
-    await dispatch(login({ email, password, rememberMe }));
+    let captchaToken = null;
+
+    if (needCaptcha || attempts >= 3) {
+      if (!executeRecaptcha) {
+        toast.error("reCAPTCHA chưa sẵn sàng. Vui lòng thử lại.");
+        return;
+      }
+
+      try {
+        setIsExecutingCaptcha(true);
+        captchaToken = await executeRecaptcha("login");
+        console.log("✅ CAPTCHA token generated:", captchaToken);
+      } catch (error) {
+        console.error("❌ CAPTCHA execution error:", error);
+        toast.error("Không thể xác minh CAPTCHA. Vui lòng thử lại.");
+        setIsExecutingCaptcha(false);
+        return;
+      } finally {
+        setIsExecutingCaptcha(false);
+      }
+    }
+
+    await dispatch(
+      login({
+        userData: { email, password, rememberMe },
+        captchaToken,
+      })
+    );
   };
 
   return (
     <div className="flex justify-center items-center h-full p-8 bg-gradient-to-br from-blue-50 to-purple-100">
-      {/* Main container */}
       <div className="w-full max-w-6xl overflow-hidden rounded-3xl shadow-lg border border-gray-100 bg-white bg-opacity-90 backdrop-blur-md">
         <div className="flex flex-wrap">
-          {/* Left side - Image */}
           <div className="hidden md:block w-1/2 relative">
             <div className="absolute inset-0 flex items-center justify-center">
               <img
@@ -68,7 +96,6 @@ const Login = () => {
             </div>
           </div>
 
-          {/* Right side - Login Form */}
           <div className="w-full md:w-1/2 bg-white p-8 bg-gradient-to-br from-white to-blue-50">
             <div className="max-w-md mx-auto">
               <div className="flex items-center mb-8">
@@ -78,6 +105,45 @@ const Login = () => {
                 <h2 className="text-3xl font-bold text-gray-800 ml-3">Login</h2>
               </div>
 
+              {/* 🔴 Alert khi tài khoản bị khóa */}
+              {isLocked && (
+                <div className="mb-4 rounded-lg bg-red-50 p-4 border border-red-200">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <AlertCircle className="h-5 w-5 text-red-400" />
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-red-800">
+                        Tài khoản tạm thời bị khóa
+                      </h3>
+                      <div className="mt-2 text-sm text-red-700">
+                        <p>{error}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 🟡 Alert cần CAPTCHA */}
+              {needCaptcha && !isLocked && (
+                <div className="mb-4 rounded-lg bg-yellow-50 p-4 border border-yellow-200">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <Shield className="h-5 w-5 text-yellow-400" />
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-yellow-800">
+                        Yêu cầu xác minh bảo mật
+                      </h3>
+                      <div className="mt-2 text-sm text-yellow-700">
+                        <p>Vui lòng hoàn thành xác minh CAPTCHA để tiếp tục.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Form login */}
               <form className="space-y-5" onSubmit={handleSubmit}>
                 <div>
                   <label className="block text-gray-700 font-medium mb-1">
@@ -91,9 +157,9 @@ const Login = () => {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-10 px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 focus:outline-none transition duration-150 bg-white shadow-sm"
+                      className="w-full pl-10 px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 focus:outline-none transition duration-150 bg-white shadow-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
                       placeholder="Enter your email"
-                      disabled={isLoading}
+                      disabled={isLoading || isLocked}
                     />
                   </div>
                 </div>
@@ -103,12 +169,12 @@ const Login = () => {
                     <label className="block text-gray-700 font-medium">
                       Password
                     </label>
-                    <a
-                      href="/forgot-password"
+                    <Link
+                      to="/forgot-password"
                       className="text-sm text-indigo-600 hover:text-indigo-800"
                     >
                       Forgot password?
-                    </a>
+                    </Link>
                   </div>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -118,22 +184,23 @@ const Login = () => {
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full pl-10 px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 focus:outline-none transition duration-150 bg-white shadow-sm"
+                      className="w-full pl-10 px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 focus:outline-none transition duration-150 bg-white shadow-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
                       placeholder="Enter your password"
-                      disabled={isLoading}
+                      disabled={isLoading || isLocked}
                     />
                   </div>
                 </div>
 
-                {/* ✅ Remember Me */}
+                {/* Remember Me */}
                 <div className="flex items-center">
                   <input
                     id="remember-me"
                     name="remember-me"
                     type="checkbox"
                     checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)} // ✅ cập nhật state
-                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    disabled={isLocked}
+                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded disabled:cursor-not-allowed"
                   />
                   <label
                     htmlFor="remember-me"
@@ -145,15 +212,52 @@ const Login = () => {
 
                 <button
                   type="submit"
-                  className="w-full py-3 px-4 flex items-center justify-center bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold rounded-lg hover:from-blue-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-300 shadow-md"
-                  disabled={isLoading}
+                  className="w-full py-3 px-4 flex items-center justify-center bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold rounded-lg hover:from-blue-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-300 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={isLoading || isExecutingCaptcha || isLocked}
                 >
-                  {isLoading ? "Đang đăng nhập..." : "Login"}
-                  <ArrowRight className="ml-2 h-5 w-5" />
+                  {isLoading || isExecutingCaptcha ? (
+                    <span className="flex items-center gap-2">
+                      <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                      {isExecutingCaptcha
+                        ? "Đang xác minh..."
+                        : "Đang đăng nhập..."}
+                    </span>
+                  ) : (
+                    <>
+                      Login
+                      <ArrowRight className="ml-2 h-5 w-5" />
+                    </>
+                  )}
                 </button>
               </form>
 
-              {/* Phần social login và link signup giữ nguyên */}
+              {/* reCAPTCHA notice */}
+              {(needCaptcha || attempts >= 3) && !isLocked && (
+                <div className="mt-4 text-xs text-center text-gray-500">
+                  <p>
+                    Trang này được bảo vệ bởi reCAPTCHA và tuân theo{" "}
+                    <a
+                      href="https://policies.google.com/privacy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-indigo-600 hover:underline"
+                    >
+                      Chính sách Bảo mật
+                    </a>{" "}
+                    và{" "}
+                    <a
+                      href="https://policies.google.com/terms"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-indigo-600 hover:underline"
+                    >
+                      Điều khoản Dịch vụ
+                    </a>{" "}
+                    của Google.
+                  </p>
+                </div>
+              )}
+
               <div className="relative my-6">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-gray-200"></div>
@@ -166,7 +270,10 @@ const Login = () => {
               </div>
 
               <div className="grid grid-cols-2 gap-3 mb-6">
-                <button className="flex items-center justify-center py-2 px-4 border border-gray-200 rounded-lg shadow-sm bg-white hover:bg-gray-50 transition duration-150">
+                <button
+                  className="flex items-center justify-center py-2 px-4 border border-gray-200 rounded-lg shadow-sm bg-white hover:bg-gray-50 transition duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={isLocked}
+                >
                   <svg className="h-5 w-5" viewBox="0 0 24 24">
                     <path
                       d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -186,7 +293,10 @@ const Login = () => {
                     />
                   </svg>
                 </button>
-                <button className="flex items-center justify-center py-2 px-4 border border-gray-200 rounded-lg shadow-sm bg-white hover:bg-gray-50 transition duration-150">
+                <button
+                  className="flex items-center justify-center py-2 px-4 border border-gray-200 rounded-lg shadow-sm bg-white hover:bg-gray-50 transition duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={isLocked}
+                >
                   <svg className="h-5 w-5" fill="#1877F2" viewBox="0 0 24 24">
                     <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
                   </svg>
