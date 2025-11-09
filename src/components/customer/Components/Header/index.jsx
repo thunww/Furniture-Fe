@@ -222,8 +222,7 @@ const Header = () => {
                         <div className="py-3 px-4 border-b border-gray-100">
                           <p className="text-sm font-medium text-gray-800 truncate">
                             {user
-                              ? `${user.first_name || ""} ${
-                                  user.last_name || ""
+                              ? `${user.first_name || ""} ${user.last_name || ""
                                 }`.trim()
                               : "User"}
                           </p>

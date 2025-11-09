@@ -3,94 +3,119 @@ import { Link } from "react-router-dom";
 import { FaStar, FaRegStar } from "react-icons/fa";
 
 const ProductItem = ({ product }) => {
-  // Lấy giá thấp nhất từ mảng variants
-  const variantPrices =
-    product.variants?.map((variant) => parseFloat(variant.price) || 0) || [];
-  const price = variantPrices.length > 0 ? Math.min(...variantPrices) : 0;
-  const discount = parseFloat(product.discount) || 0;
-  const priceAfterDiscount = price * (1 - discount / 100);
+  const variants = Array.isArray(product?.variants) ? product.variants : [];
 
-  // Định dạng giá
-  const formattedPrice = new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-  }).format(price);
-  const formattedPriceAfterDiscount = new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-  }).format(priceAfterDiscount);
+  // === ẢNH: ưu tiên variant có image_url ===
+  const cover =
+    variants.find((v) => v?.image_url)?.image_url ||
+    product?.image_url ||
+    "https://placehold.co/600x600?text=Furniture";
 
-  // Định dạng số lượng bán
-  const formatSold = (sold) => {
-    if (sold >= 1000) {
-      return (sold / 1000).toFixed(1) + "k";
-    }
-    return sold;
-  };
+  // === GIÁ: min price trong variants ===
+  const variantPrices = variants
+    .map((v) => Number(v?.price) || 0)
+    .filter((n) => n > 0);
 
-  // Định dạng đánh giá
-  const averageRating = parseFloat(product.average_rating || 0);
-  const renderRatingStars = (rating) => {
-    const totalStars = 5;
-    return Array.from({ length: totalStars }, (_, i) =>
+  const basePrice = variantPrices.length ? Math.min(...variantPrices) : 0;
+  const discount = Number(product?.discount) || 0;
+  const finalPrice = basePrice ? basePrice * (1 - discount / 100) : 0;
+
+  const fVND = (n) =>
+    new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(
+      Number.isFinite(n) ? n : 0
+    );
+
+  // Sold
+  const formatSold = (n = 0) => (n >= 1000 ? (n / 1000).toFixed(1) + "k" : n);
+
+  // Rating
+  const averageRating = Number(product?.average_rating) || 0;
+  const renderRatingStars = (rating) =>
+    Array.from({ length: 5 }, (_, i) =>
       i < Math.floor(rating) ? (
-        <FaStar key={`star-${i}`} className="text-amber-400 text-xs" />
+        <FaStar key={i} className="text-amber-400 text-xs" />
       ) : (
-        <FaRegStar key={`star-${i}`} className="text-amber-400 text-xs" />
+        <FaRegStar key={i} className="text-amber-400 text-xs" />
       )
     );
-  };
+
+  // Một vài thông tin biến thể nhẹ nhàng
+  const firstVariant = variants[0] || {};
+  const chipColor = firstVariant?.color;
+  const chipMaterial = firstVariant?.material;
+  const variantCount = variants.length;
 
   return (
     <div className="group relative overflow-hidden rounded-xl bg-white shadow-lg hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300 border border-gray-100">
       {/* Badge giảm giá */}
       {discount > 0 && (
         <div className="absolute top-3 left-3 z-10">
-          <span className="bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-lg">
+          <span className="bg-rose-600 text-white text-xs font-bold px-2 py-1 rounded">
             -{discount.toFixed(0)}%
           </span>
         </div>
       )}
 
-      {/* Hình ảnh sản phẩm */}
+      {/* Ảnh */}
       <div className="relative overflow-hidden aspect-square">
         <Link to={`/product/${product.product_id}`}>
           <img
-            src={product.variants?.[0]?.image_url}
+            src={cover}
             className="w-full h-full object-cover transform transition-transform duration-500 group-hover:scale-110"
-            alt={product.product_name}
+            alt={product?.product_name}
             loading="lazy"
+            onError={(e) => (e.currentTarget.src = "https://placehold.co/600x600?text=Furniture")}
           />
-          <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
         </Link>
       </div>
 
-      {/* Thông tin sản phẩm */}
+      {/* Info */}
       <div className="p-4">
-        <h3 className="font-medium text-gray-800 text-base mb-2 line-clamp-2 h-12 group-hover:text-indigo-600 transition-colors duration-200">
-          <Link to={`/product/${product.product_id}`}>
-            {product.product_name}
-          </Link>
+        <h3 className="font-medium text-gray-800 text-[15px] mb-2 line-clamp-2 h-[40px] group-hover:text-amber-700 transition-colors">
+          <Link to={`/product/${product.product_id}`}>{product?.product_name}</Link>
         </h3>
 
-        <div className="flex flex-col mb-4">
-          <span className="text-lg font-bold bg-gradient-to-r from-pink-500 to-red-500 bg-clip-text text-transparent">
-            {formattedPriceAfterDiscount}
-          </span>
-          {discount > 0 && price > 0 && (
-            <span className="text-gray-500 line-through text-xs mt-1">
-              {formattedPrice}
-            </span>
+        {/* Chips biến thể (nếu có) */}
+        {(chipColor || chipMaterial || variantCount > 1) && (
+          <div className="flex flex-wrap gap-2 mb-3">
+            {chipColor && (
+              <span className="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">
+                Color: {chipColor}
+              </span>
+            )}
+            {chipMaterial && (
+              <span className="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">
+                Material: {chipMaterial}
+              </span>
+            )}
+            {variantCount > 1 && (
+              <span className="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">
+                {variantCount} variants
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Giá */}
+        <div className="flex items-baseline gap-2 mb-3">
+          {finalPrice > 0 ? (
+            <>
+              <span className="text-lg font-bold text-amber-700">{fVND(finalPrice)}</span>
+              {discount > 0 && basePrice > 0 && (
+                <span className="text-gray-400 line-through text-xs">{fVND(basePrice)}</span>
+              )}
+            </>
+          ) : (
+            <span className="text-sm font-medium text-amber-700">View details</span>
           )}
         </div>
 
         <div className="flex items-center justify-between">
-          <div className="flex text-amber-400 text-xs">
-            {renderRatingStars(averageRating)}
-          </div>
+          <div className="flex text-amber-400 text-xs">{renderRatingStars(averageRating)}</div>
           <div className="bg-gray-100 rounded-full px-2 py-1">
             <span className="text-xs text-gray-600 font-medium">
-              {formatSold(product.sold || 0)} sold
+              {formatSold(product?.sold || 0)} sold
             </span>
           </div>
         </div>

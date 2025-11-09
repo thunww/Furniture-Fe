@@ -14,14 +14,14 @@ const Search = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Cập nhật từ khóa từ URL khi truy cập trang search
+  // Lấy q từ URL (KHÔNG decodeURIComponent — URLSearchParams đã decode)
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const query = params.get("q") || "";
-    setSearchValue(decodeURIComponent(query));
+    const q = params.get("q") || "";
+    setSearchValue(q);
   }, [location.search]);
 
-  // Xóa từ khóa khi rời khỏi trang search
+  // Xóa từ khóa khi rời trang /search
   useEffect(() => {
     if (!location.pathname.startsWith("/search")) {
       setSearchValue("");
@@ -30,19 +30,17 @@ const Search = () => {
     }
   }, [location.pathname]);
 
-  // Gợi ý từ khóa (debounce)
+  // Gợi ý (debounce)
   useEffect(() => {
     if (!searchValue.trim() || searchValue.length < 2) {
       setSuggestions([]);
       setShowDropdown(false);
       return;
     }
-
     clearTimeout(timeoutRef.current);
     timeoutRef.current = setTimeout(() => {
       fetchSuggestions(searchValue);
     }, 300);
-
     return () => clearTimeout(timeoutRef.current);
   }, [searchValue]);
 
@@ -50,8 +48,8 @@ const Search = () => {
     setIsLoadingSuggestions(true);
     try {
       const res = await productService.searchSuggest(keyword);
-      if (res.success) {
-        setSuggestions(res.data);
+      if (res?.success) {
+        setSuggestions(res.data || []);
         setShowDropdown(true);
       } else {
         setSuggestions([]);
@@ -65,10 +63,14 @@ const Search = () => {
 
   const handleSearch = () => {
     const keyword = searchValue.trim();
+    const params = new URLSearchParams(location.search);
     if (keyword) {
-      navigate(`/search?q=${encodeURIComponent(keyword)}`);
-      setShowDropdown(false);
+      params.set("q", keyword); // KHÔNG encodeURIComponent
+    } else {
+      params.delete("q");
     }
+    navigate(`/search?${params.toString()}`);
+    setShowDropdown(false);
   };
 
   const handleClearSearch = () => {
@@ -76,7 +78,9 @@ const Search = () => {
     setSuggestions([]);
     setShowDropdown(false);
     if (location.pathname.startsWith("/search")) {
-      navigate("/search");
+      const params = new URLSearchParams(location.search);
+      params.delete("q");
+      navigate(`/search?${params.toString()}`);
     }
   };
 
@@ -89,7 +93,9 @@ const Search = () => {
 
   const handleSelectSuggestion = (name) => {
     setSearchValue(name);
-    navigate(`/search?q=${encodeURIComponent(name)}`);
+    const params = new URLSearchParams(location.search);
+    params.set("q", name); // KHÔNG encodeURIComponent
+    navigate(`/search?${params.toString()}`);
     setShowDropdown(false);
   };
 

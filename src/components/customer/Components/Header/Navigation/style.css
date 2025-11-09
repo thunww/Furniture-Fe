@@ -66,3 +66,35 @@
         min-width: 160px;
     }
 }
+
+
+.megaMenu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    min-width: 260px;
+    background: white;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    visibility: hidden;
+    opacity: 0;
+    transition: 0.2s;
+    z-index: 50;
+}
+
+.mobileMenu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background: white;
+    border-top: 1px solid #eee;
+    z-index: 50;
+}
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 14px;
+}

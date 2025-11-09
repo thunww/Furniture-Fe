@@ -1,157 +1,182 @@
-import React from 'react'
-import { Link } from 'react-router-dom';
-import { useState } from "react";
-import { IoCloseSharp } from "react-icons/io5";
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
+import Button from "@mui/material/Button";
 import { FaRegSquarePlus } from "react-icons/fa6";
 import { FiMinusSquare } from "react-icons/fi";
 
-import Box from "@mui/material/Box";
-import Drawer from "@mui/material/Drawer";
-import Button from "@mui/material/Button";
+/**
+ * Drawer/Box không dùng ở component này nên bỏ để tránh nhầm props.
+ * Cấu trúc mới: danh mục nội thất (2 cấp).
+ */
+
+const CATEGORIES = [
+    {
+        label: "Living Room",
+        to: "/collections/living",
+        children: [
+            { label: "Sofas", to: "/collections/sofa" },
+            { label: "Coffee Tables", to: "/collections/coffee-table" },
+            { label: "TV Stands", to: "/collections/tv-stand" },
+        ],
+    },
+    {
+        label: "Tables & Chairs",
+        to: "/collections/table-chair",
+        children: [
+            {
+                label: "Tables",
+                to: "/collections/table",
+                children: [
+                    { label: "Dining Tables", to: "/collections/dining-table" },
+                    { label: "Side Tables", to: "/collections/side-table" },
+                    { label: "Console Tables", to: "/collections/console-table" },
+                ],
+            },
+            { label: "Chairs", to: "/collections/chair" },
+            { label: "Benches & Stools", to: "/collections/stool" },
+        ],
+    },
+    {
+        label: "Bedroom",
+        to: "/collections/bedroom",
+        children: [
+            { label: "Beds", to: "/collections/bed" },
+            { label: "Wardrobes", to: "/collections/wardrobe" },
+            { label: "Nightstands", to: "/collections/nightstand" },
+            { label: "Dressers", to: "/collections/dresser" },
+        ],
+    },
+    {
+        label: "Storage & Shelves",
+        to: "/collections/storage",
+        children: [
+            { label: "Cabinets", to: "/collections/cabinet" },
+            { label: "Bookshelves", to: "/collections/bookshelf" },
+            { label: "Wall Shelves", to: "/collections/wall-shelf" },
+        ],
+    },
+    {
+        label: "Lighting",
+        to: "/collections/lighting",
+        children: [
+            { label: "Floor Lamps", to: "/collections/floor-lamp" },
+            { label: "Table Lamps", to: "/collections/table-lamp" },
+            { label: "Pendant Lights", to: "/collections/pendant" },
+        ],
+    },
+    {
+        label: "Home Decor",
+        to: "/collections/decor",
+        children: [
+            { label: "Rugs", to: "/collections/rug" },
+            { label: "Mirrors", to: "/collections/mirror" },
+            { label: "Wall Art", to: "/collections/wall-art" },
+        ],
+    },
+];
 
 const CategoryCollapse = () => {
+    // index cấp 1 đang mở
     const [submenuIndex, setSubmenuIndex] = useState(null);
+    // index cấp 2 đang mở (nằm trong mục cấp 1 hiện tại)
     const [innerSubmenuIndex, setInnerSubmenuIndex] = useState(null);
 
-    const toggleDrawer = (newOpen) => () => {
-        props.setIsOpenCatPanel(newOpen);
+    const toggleLevel1 = (idx) => {
+        if (submenuIndex === idx) {
+            setSubmenuIndex(null);
+            setInnerSubmenuIndex(null);
+        } else {
+            setSubmenuIndex(idx);
+            setInnerSubmenuIndex(null); // reset level 2 khi đổi level 1
+        }
     };
 
-    const openSubmenu = (index) => {
-        setSubmenuIndex(submenuIndex === index ? null : index);
+    const toggleLevel2 = (idx) => {
+        setInnerSubmenuIndex(innerSubmenuIndex === idx ? null : idx);
     };
 
-    const openInnerSubmenu = (index) => {
-        setInnerSubmenuIndex(innerSubmenuIndex === index ? null : index);
-    };
     return (
-        <>
+        <div className="scroll">
+            <ul className="w-full">
+                {CATEGORIES.map((cat, i) => {
+                    const openL1 = submenuIndex === i;
+                    const hasChildren = Array.isArray(cat.children) && cat.children.length > 0;
 
-            <div className="scroll">
-                <ul className="w-full">
-                    {/* Danh mục 1: Fashion */}
-                    <li className="list-none flex items-center relative flex-col">
-                        <Link to="/" className="w-full">
-                            <Button className="w-full !text-left !justify-start !px-3 !text-[rgba(0,0,0,0.8)]">
-                                Fashion
-                            </Button>
-                        </Link>
+                    return (
+                        <li key={cat.label} className="list-none flex items-center relative flex-col mt-2 first:mt-0">
+                            <Link to={cat.to} className="w-full">
+                                <Button className="w-full !text-left !justify-start !px-3 !text-[rgba(0,0,0,0.85)]">
+                                    {cat.label}
+                                </Button>
+                            </Link>
 
-                        {submenuIndex === 0 ? (
-                            <FiMinusSquare
-                                className="absolute top-[10px] right-[15px] cursor-pointer"
-                                onClick={() => openSubmenu(0)}
-                            />
-                        ) : (
-                            <FaRegSquarePlus
-                                className="absolute top-[10px] right-[15px] cursor-pointer"
-                                onClick={() => openSubmenu(0)}
-                            />
-                        )}
+                            {hasChildren &&
+                                (openL1 ? (
+                                    <FiMinusSquare
+                                        className="absolute top-[10px] right-[15px] cursor-pointer"
+                                        onClick={() => toggleLevel1(i)}
+                                    />
+                                ) : (
+                                    <FaRegSquarePlus
+                                        className="absolute top-[10px] right-[15px] cursor-pointer"
+                                        onClick={() => toggleLevel1(i)}
+                                    />
+                                ))}
 
-                        {/* Submenu của Fashion */}
-                        {submenuIndex === 0 && (
-                            <ul className="submenu w-full pl-3">
-                                <li className="list-none relative">
-                                    <Link to="/" className="w-full">
-                                        <Button className="w-full !text-left !justify-start !px-3 !text-[rgba(0,0,0,0.8)]">
-                                            Apparel
-                                        </Button>
-                                    </Link>
+                            {/* Submenu cấp 1 */}
+                            {openL1 && hasChildren && (
+                                <ul className="submenu w-full pl-3">
+                                    {cat.children.map((child, j) => {
+                                        const childHasChildren =
+                                            Array.isArray(child.children) && child.children.length > 0;
+                                        const openL2 = innerSubmenuIndex === j;
 
-                                    {innerSubmenuIndex === 0 ? (
-                                        <FiMinusSquare
-                                            className="absolute top-[10px] right-[15px] cursor-pointer"
-                                            onClick={() => openInnerSubmenu(0)}
-                                        />
-                                    ) : (
-                                        <FaRegSquarePlus
-                                            className="absolute top-[10px] right-[15px] cursor-pointer"
-                                            onClick={() => openInnerSubmenu(0)}
-                                        />
-                                    )}
-
-                                    {/* Submenu bên trong Apparel */}
-                                    {innerSubmenuIndex === 0 && (
-                                        <ul className="inner_submenu w-full pl-3">
-                                            <li className="list-none relative mb-1">
-                                                <Link to="/"
-                                                    className=" link w-full !text-left !justify-start !px-3 transition text-[14px]">
-                                                    Smart Tablet
-                                                </Link>
-                                            </li>
-                                            <li className="list-none relative mb-1">
-                                                <Link to="/" className="w-full">
-                                                    <Button className="w-full !text-left !justify-start !px-3 transition text-[14px]">
-                                                        Crepe T-Shirt
+                                        return (
+                                            <li key={child.label} className="list-none relative">
+                                                <Link to={child.to} className="w-full">
+                                                    <Button className="w-full !text-left !justify-start !px-3 !text-[rgba(0,0,0,0.8)]">
+                                                        {child.label}
                                                     </Button>
                                                 </Link>
-                                            </li>
-                                            <li className="list-none relative mb-1">
-                                                <Link to="/" className="w-full">
-                                                    <Button className="w-full !text-left !justify-start !px-3 transition text-[14px]">
-                                                        Leather Watch
-                                                    </Button>
-                                                </Link>
-                                            </li>
-                                            <li className="list-none relative mb-1">
-                                                <Link to="/" className="w-full">
-                                                    <Button className="w-full !text-left !justify-start !px-3 transition text-[14px]">
-                                                        Rolling Diamond
-                                                    </Button>
-                                                </Link>
-                                            </li>
-                                        </ul>
-                                    )}
-                                </li>
-                            </ul>
-                        )}
-                    </li>
 
-                    {/* Danh mục 2: Electronics */}
-                    <li className="list-none flex items-center relative flex-col mt-2">
-                        <Link to="/" className="w-full">
-                            <Button className="w-full !text-left !justify-start !px-3 !text-[rgba(0,0,0,0.8)]">
-                                Electronics
-                            </Button>
-                        </Link>
+                                                {childHasChildren &&
+                                                    (openL2 ? (
+                                                        <FiMinusSquare
+                                                            className="absolute top-[10px] right-[15px] cursor-pointer"
+                                                            onClick={() => toggleLevel2(j)}
+                                                        />
+                                                    ) : (
+                                                        <FaRegSquarePlus
+                                                            className="absolute top-[10px] right-[15px] cursor-pointer"
+                                                            onClick={() => toggleLevel2(j)}
+                                                        />
+                                                    ))}
 
-                        {submenuIndex === 1 ? (
-                            <FiMinusSquare
-                                className="absolute top-[10px] right-[15px] cursor-pointer"
-                                onClick={() => openSubmenu(1)}
-                            />
-                        ) : (
-                            <FaRegSquarePlus
-                                className="absolute top-[10px] right-[15px] cursor-pointer"
-                                onClick={() => openSubmenu(1)}
-                            />
-                        )}
-
-                        {/* Submenu của Electronics */}
-                        {submenuIndex === 1 && (
-                            <ul className="submenu w-full pl-3">
-                                <li className="list-none relative">
-                                    <Link to="/" className="w-full">
-                                        <Button className="w-full !text-left !justify-start !px-3 !text-[rgba(0,0,0,0.8)]">
-                                            Phones
-                                        </Button>
-                                    </Link>
-                                </li>
-                                <li className="list-none relative">
-                                    <Link to="/" className="w-full">
-                                        <Button className="w-full !text-left !justify-start !px-3 !text-[rgba(0,0,0,0.8)]">
-                                            Laptops
-                                        </Button>
-                                    </Link>
-                                </li>
-                            </ul>
-                        )}
-                    </li>
-                </ul>
-            </div>
-        </>
-    )
+                                                {/* Submenu cấp 2 */}
+                                                {openL2 && childHasChildren && (
+                                                    <ul className="inner_submenu w-full pl-3">
+                                                        {child.children.map((g) => (
+                                                            <li key={g.label} className="list-none relative mb-1">
+                                                                <Link to={g.to} className="w-full">
+                                                                    <Button className="w-full !text-left !justify-start !px-3 transition !text-[14px]">
+                                                                        {g.label}
+                                                                    </Button>
+                                                                </Link>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                )}
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            )}
+                        </li>
+                    );
+                })}
+            </ul>
+        </div>
+    );
 };
 
-export default CategoryCollapse
+export default CategoryCollapse;
