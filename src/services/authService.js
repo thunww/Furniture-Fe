@@ -2,10 +2,9 @@ import authApi from "../api/authApi";
 
 const authService = {
   login: async (userData, captchaToken = null) => {
-    // ← THÊM captchaToken parameter
     const response = await authApi.login({
       ...userData,
-      captchaToken, // ← Gửi captchaToken cùng với userData
+      captchaToken,
     });
     return response.data;
   },
@@ -33,6 +32,11 @@ const authService = {
   getProfile: async () => {
     const response = await authApi.getProfile();
     return response.data.user;
+  },
+
+  loginWithGoogle: async (googleToken) => {
+    const response = await authApi.loginWithGoogle(googleToken);
+    return response.data;
   },
 };
 
