@@ -1,11 +1,11 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Mail, Lock, ArrowRight, Shield, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
-import { login, resetMessage } from "../../redux/authSlice";
-import { useNavigate } from "react-router-dom";
+import { GoogleLogin } from "@react-oauth/google";
 import { ToastContainer, toast } from "react-toastify";
+import { login, loginWithGoogle, resetMessage } from "../../redux/authSlice";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -44,6 +44,7 @@ const Login = () => {
     }
   }, [message, error, navigate, dispatch]);
 
+  // 🟢 Handle Email/Password Login
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -63,9 +64,8 @@ const Login = () => {
       try {
         setIsExecutingCaptcha(true);
         captchaToken = await executeRecaptcha("login");
-        console.log("✅ CAPTCHA token generated:", captchaToken);
       } catch (error) {
-        console.error("❌ CAPTCHA execution error:", error);
+        console.error("CAPTCHA execution error:", error);
         toast.error("Không thể xác minh CAPTCHA. Vui lòng thử lại.");
         setIsExecutingCaptcha(false);
         return;
@@ -82,10 +82,28 @@ const Login = () => {
     );
   };
 
+  // 🟢 Handle Google Login
+  const handleGoogleSuccess = async (credentialResponse) => {
+    try {
+      await dispatch(loginWithGoogle(credentialResponse.credential)).unwrap();
+      toast.success("Đăng nhập Google thành công!");
+      setTimeout(() => {
+        navigate("/");
+      }, 1500);
+    } catch (err) {
+      toast.error(err || "Đăng nhập Google thất bại");
+    }
+  };
+
+  const handleGoogleError = () => {
+    toast.error("Đăng nhập Google thất bại");
+  };
+
   return (
     <div className="flex justify-center items-center h-full p-8 bg-gradient-to-br from-blue-50 to-purple-100">
       <div className="w-full max-w-6xl overflow-hidden rounded-3xl shadow-lg border border-gray-100 bg-white bg-opacity-90 backdrop-blur-md">
         <div className="flex flex-wrap">
+          {/* Hình minh họa bên trái */}
           <div className="hidden md:block w-1/2 relative">
             <div className="absolute inset-0 flex items-center justify-center">
               <img
@@ -96,6 +114,7 @@ const Login = () => {
             </div>
           </div>
 
+          {/* Form đăng nhập */}
           <div className="w-full md:w-1/2 bg-white p-8 bg-gradient-to-br from-white to-blue-50">
             <div className="max-w-md mx-auto">
               <div className="flex items-center mb-8">
@@ -105,39 +124,33 @@ const Login = () => {
                 <h2 className="text-3xl font-bold text-gray-800 ml-3">Login</h2>
               </div>
 
-              {/* 🔴 Alert khi tài khoản bị khóa */}
+              {/* 🔴 Tài khoản bị khóa */}
               {isLocked && (
                 <div className="mb-4 rounded-lg bg-red-50 p-4 border border-red-200">
                   <div className="flex">
-                    <div className="flex-shrink-0">
-                      <AlertCircle className="h-5 w-5 text-red-400" />
-                    </div>
+                    <AlertCircle className="h-5 w-5 text-red-400" />
                     <div className="ml-3">
                       <h3 className="text-sm font-medium text-red-800">
                         Tài khoản tạm thời bị khóa
                       </h3>
-                      <div className="mt-2 text-sm text-red-700">
-                        <p>{error}</p>
-                      </div>
+                      <p className="mt-1 text-sm text-red-700">{error}</p>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* 🟡 Alert cần CAPTCHA */}
+              {/* 🟡 Cảnh báo cần CAPTCHA */}
               {needCaptcha && !isLocked && (
                 <div className="mb-4 rounded-lg bg-yellow-50 p-4 border border-yellow-200">
                   <div className="flex">
-                    <div className="flex-shrink-0">
-                      <Shield className="h-5 w-5 text-yellow-400" />
-                    </div>
+                    <Shield className="h-5 w-5 text-yellow-400" />
                     <div className="ml-3">
                       <h3 className="text-sm font-medium text-yellow-800">
                         Yêu cầu xác minh bảo mật
                       </h3>
-                      <div className="mt-2 text-sm text-yellow-700">
-                        <p>Vui lòng hoàn thành xác minh CAPTCHA để tiếp tục.</p>
-                      </div>
+                      <p className="mt-1 text-sm text-yellow-700">
+                        Vui lòng hoàn thành xác minh CAPTCHA để tiếp tục.
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -150,14 +163,12 @@ const Login = () => {
                     Email
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Mail className="h-5 w-5 text-indigo-400" />
-                    </div>
+                    <Mail className="absolute left-3 top-3 h-5 w-5 text-indigo-400" />
                     <input
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-10 px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 focus:outline-none transition duration-150 bg-white shadow-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      className="w-full pl-10 px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 focus:outline-none bg-white shadow-sm disabled:bg-gray-100"
                       placeholder="Enter your email"
                       disabled={isLoading || isLocked}
                     />
@@ -177,14 +188,12 @@ const Login = () => {
                     </Link>
                   </div>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Lock className="h-5 w-5 text-indigo-400" />
-                    </div>
+                    <Lock className="absolute left-3 top-3 h-5 w-5 text-indigo-400" />
                     <input
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full pl-10 px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 focus:outline-none transition duration-150 bg-white shadow-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      className="w-full pl-10 px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 focus:outline-none bg-white shadow-sm disabled:bg-gray-100"
                       placeholder="Enter your password"
                       disabled={isLoading || isLocked}
                     />
@@ -204,7 +213,7 @@ const Login = () => {
                   />
                   <label
                     htmlFor="remember-me"
-                    className="ml-2 block text-sm text-gray-700"
+                    className="ml-2 text-sm text-gray-700"
                   >
                     Remember me
                   </label>
@@ -212,7 +221,7 @@ const Login = () => {
 
                 <button
                   type="submit"
-                  className="w-full py-3 px-4 flex items-center justify-center bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold rounded-lg hover:from-blue-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-300 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full py-3 px-4 flex items-center justify-center bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold rounded-lg hover:from-blue-600 hover:to-indigo-700 focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-300 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={isLoading || isExecutingCaptcha || isLocked}
                 >
                   {isLoading || isExecutingCaptcha ? (
@@ -258,6 +267,7 @@ const Login = () => {
                 </div>
               )}
 
+              {/* Divider */}
               <div className="relative my-6">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-gray-200"></div>
@@ -269,38 +279,18 @@ const Login = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 mb-6">
-                <button
-                  className="flex items-center justify-center py-2 px-4 border border-gray-200 rounded-lg shadow-sm bg-white hover:bg-gray-50 transition duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+              {/* Google Login Button */}
+              <div className="flex justify-center mb-6">
+                <GoogleLogin
+                  onSuccess={handleGoogleSuccess}
+                  onError={handleGoogleError}
+                  text="continue_with"
+                  shape="rectangular"
+                  size="large"
+                  width="350"
+                  locale="vi"
                   disabled={isLocked}
-                >
-                  <svg className="h-5 w-5" viewBox="0 0 24 24">
-                    <path
-                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                      fill="#4285F4"
-                    />
-                    <path
-                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                      fill="#34A853"
-                    />
-                    <path
-                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                      fill="#FBBC05"
-                    />
-                    <path
-                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                      fill="#EA4335"
-                    />
-                  </svg>
-                </button>
-                <button
-                  className="flex items-center justify-center py-2 px-4 border border-gray-200 rounded-lg shadow-sm bg-white hover:bg-gray-50 transition duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={isLocked}
-                >
-                  <svg className="h-5 w-5" fill="#1877F2" viewBox="0 0 24 24">
-                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-                  </svg>
-                </button>
+                />
               </div>
 
               <p className="text-center text-gray-600">

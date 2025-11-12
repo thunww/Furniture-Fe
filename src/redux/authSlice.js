@@ -18,18 +18,32 @@ export const register = createAsyncThunk(
 export const login = createAsyncThunk(
   "auth/login",
   async ({ userData, captchaToken }, thunkAPI) => {
-    // ← SỬA: Nhận object với userData và captchaToken
     try {
-      const response = await authService.login(userData, captchaToken); // ← Truyền captchaToken
+      const response = await authService.login(userData, captchaToken);
       return response;
     } catch (error) {
       return thunkAPI.rejectWithValue({
         message:
           error.response?.data?.message || error.message || "Login failed",
-        needCaptcha: error.response?.data?.needCaptcha || false, // ← THÊM
-        isLocked: error.response?.data?.isLocked || false, // ← THÊM
-        attempts: error.response?.data?.attempts || 0, // ← THÊM
+        needCaptcha: error.response?.data?.needCaptcha || false,
+        isLocked: error.response?.data?.isLocked || false,
+        attempts: error.response?.data?.attempts || 0,
       });
+    }
+  }
+);
+
+// ← THÊM GOOGLE LOGIN ACTION
+export const loginWithGoogle = createAsyncThunk(
+  "auth/loginWithGoogle",
+  async (googleToken, thunkAPI) => {
+    try {
+      const response = await authService.loginWithGoogle(googleToken);
+      return response;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || error.message || "Google login failed"
+      );
     }
   }
 );
@@ -58,9 +72,9 @@ const initialState = {
   isLoading: false,
   message: null,
   error: null,
-  needCaptcha: false, // ← THÊM
-  isLocked: false, // ← THÊM
-  attempts: 0, // ← THÊM
+  needCaptcha: false,
+  isLocked: false,
+  attempts: 0,
 };
 
 const authSlice = createSlice({
@@ -73,8 +87,8 @@ const authSlice = createSlice({
     resetMessage: (state) => {
       state.message = null;
       state.error = null;
-      state.needCaptcha = false; // ← THÊM
-      state.isLocked = false; // ← THÊM
+      state.needCaptcha = false;
+      state.isLocked = false;
     },
   },
   extraReducers: (builder) => {
@@ -95,7 +109,7 @@ const authSlice = createSlice({
       })
       .addCase(login.pending, (state) => {
         state.isLoading = true;
-        state.error = null; // ← THÊM: Clear error khi bắt đầu login
+        state.error = null;
       })
       .addCase(login.fulfilled, (state, action) => {
         state.isLoading = false;
@@ -103,9 +117,9 @@ const authSlice = createSlice({
         state.roles = action.payload.user.roles || [];
         state.isAuthenticated = true;
         state.message = action.payload.message;
-        state.needCaptcha = false; // ← THÊM: Reset khi login thành công
-        state.isLocked = false; // ← THÊM
-        state.attempts = 0; // ← THÊM
+        state.needCaptcha = false;
+        state.isLocked = false;
+        state.attempts = 0;
       })
       .addCase(login.rejected, (state, action) => {
         state.isLoading = false;
@@ -114,9 +128,28 @@ const authSlice = createSlice({
           action.payload ||
           action.error?.message ||
           "Đăng nhập thất bại";
-        state.needCaptcha = action.payload?.needCaptcha || false; // ← THÊM
-        state.isLocked = action.payload?.isLocked || false; // ← THÊM
-        state.attempts = action.payload?.attempts || 0; // ← THÊM
+        state.needCaptcha = action.payload?.needCaptcha || false;
+        state.isLocked = action.payload?.isLocked || false;
+        state.attempts = action.payload?.attempts || 0;
+      })
+      // ← THÊM GOOGLE LOGIN CASES
+      .addCase(loginWithGoogle.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(loginWithGoogle.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.user = action.payload.user;
+        state.roles = action.payload.user.roles || [];
+        state.isAuthenticated = true;
+        state.message = action.payload.message;
+        state.needCaptcha = false;
+        state.isLocked = false;
+        state.attempts = 0;
+      })
+      .addCase(loginWithGoogle.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload || "Đăng nhập Google thất bại";
       })
       .addCase(getProfile.pending, (state) => {
         state.isLoading = true;
@@ -140,9 +173,9 @@ const authSlice = createSlice({
         state.isAuthenticated = false;
         state.message = null;
         state.error = null;
-        state.needCaptcha = false; // ← THÊM
-        state.isLocked = false; // ← THÊM
-        state.attempts = 0; // ← THÊM
+        state.needCaptcha = false;
+        state.isLocked = false;
+        state.attempts = 0;
       });
   },
 });

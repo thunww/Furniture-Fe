@@ -4,6 +4,7 @@ import { getProfile } from "./redux/authSlice";
 import AppRoutes from "./routes";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { GoogleOAuthProvider } from "@react-oauth/google"; // ← THÊM
 
 function App() {
   const dispatch = useDispatch();
@@ -24,10 +25,11 @@ function App() {
   }
 
   return (
-    <>
+    // ← WRAP VỚI GoogleOAuthProvider
+    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
       <AppRoutes />
       <ToastContainer position="top-right" autoClose={3000} />
-    </>
+    </GoogleOAuthProvider>
   );
 }
 
