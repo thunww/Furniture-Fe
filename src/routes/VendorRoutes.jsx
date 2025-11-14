@@ -8,7 +8,6 @@ import AnalyticsPage from "../pages/Vendor/Analytics";
 import Settings from "../pages/Vendor/Setting";
 import NotFound from "../pages/Vendor/NotFound";
 import BulkShippingPage from "../pages/Vendor/bulk-shipping";
-import UserProfile from "../components/seller/ShopProfile/UserProfile";
 import DetailOrder from "../components/seller/AllOrder/DetailOrder";
 import EditOrder from "../pages/Vendor/EditOrder";
 import UpdateProduct from "../components/seller/Productpage/HomeProduct/UpdateProduct";
@@ -35,7 +34,6 @@ const VendorRoutes = () => {
         <Route path="products/add" element={<AddProduct />} />
         <Route path="products/settings" element={<Settings />} />
         <Route path="shop-profile" element={<ShopProfile />} />
-        <Route path="user-profile" element={<UserProfile />} />
         <Route path="analytics" element={<AnalyticsPage />} />
         <Route path="settings" element={<Settings />} />
         <Route path="*" element={<NotFound />} />

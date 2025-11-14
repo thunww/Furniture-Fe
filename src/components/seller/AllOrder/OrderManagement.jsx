@@ -62,7 +62,8 @@ const SearchInput = ({ searchInput, setSearchInput, onSearch }) => {
   };
 
   useEffect(() => {
-    if (inputRef.current === document.activeElement) {
+    // Autofocus the search input on mount
+    if (inputRef.current) {
       inputRef.current.focus();
     }
   }, [searchInput]);
@@ -258,15 +259,21 @@ const OrderManagement = () => {
       showLoaderOnConfirm: true,
       preConfirm: async () => {
         try {
-          const result = await orderApi.updateSubordersStatusToProcessing(
+          // API helper may return either the full axios response or already response.data
+          const resp = await orderApi.updateSubordersStatusToProcessing(
             selectedOrders
           );
-          if (!result.success) {
-            throw new Error(result.message || "Failed to update status");
+          // Normalize: if resp.data exists, use it; otherwise assume resp is the data
+          const data = resp && resp.data ? resp.data : resp;
+          if (!data || !data.success) {
+            throw new Error(data?.message || "Failed to update status");
           }
-          return result;
+          // Return the normalized data so Swal's result.value contains the API data
+          return data;
         } catch (error) {
-          Swal.showValidationMessage(`Request failed: ${error.message}`);
+          // If axios error, try to show server message, otherwise show error.message
+          const serverMessage = error?.response?.data?.message || error?.message;
+          Swal.showValidationMessage(`Request failed: ${serverMessage}`);
         }
       },
       allowOutsideClick: () => !Swal.isLoading(),
@@ -503,7 +510,6 @@ const OrderManagement = () => {
             </div>
           </div>
           <div className="flex items-center space-x-6">
-            <StatusBadge status={order.status} />
             {selectedOrders.includes(order.sub_order_id) && (
               <button
                 onClick={() => handleSelectOrder(order.sub_order_id)}
@@ -511,6 +517,28 @@ const OrderManagement = () => {
               >
                 <AlertCircle className="w-5 h-5" />
               </button>
+            )}
+            {/** Move StatusBadge to the rightmost header section by placing it
+             *  inside this right-group (the header is justify-between so this
+             *  group sits on the right). */}
+            <StatusBadge status={order.status} />
+            {selectedOrders.includes(order.sub_order_id) && (
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={() => handleUpdateStatus("processing")}
+                  className="flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 font-medium shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <CheckCircle className="mr-2 w-5 h-5" />
+                  Process Selected Orders
+                </button>
+
+                <button
+                  onClick={handleExportData}
+                  className="flex items-center px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl hover:from-emerald-700 hover:to-teal-700 transition-all duration-200 font-medium shadow-sm hover:shadow-md"
+                >
+                  <Download className="mr-2 w-5 h-5" /> Export Data (.csv)
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -616,11 +644,11 @@ const OrderManagement = () => {
             <div className="p-6">
               {order.orderItems && order.orderItems.length > 0 ? (
                 <div className="space-y-4">
-                  {order.orderItems.map((item, index) => (
+                  {order.orderItems.slice(0, 2).map((item, index) => (
                     <div
                       key={item.order_item_id}
                       className={`flex items-center p-4 rounded-xl bg-slate-50 border border-slate-200 hover:bg-slate-100 transition-all duration-200 ${
-                        index !== order.orderItems.length - 1 ? "mb-4" : ""
+                        index !== Math.min(order.orderItems.length, 2) - 1 ? "mb-4" : ""
                       }`}
                     >
                       <div className="flex-shrink-0 mr-6">
@@ -684,6 +712,12 @@ const OrderManagement = () => {
                       </div>
                     </div>
                   ))}
+
+                  {order.orderItems.length > 2 && (
+                    <div className="text-sm text-slate-600 mt-2">
+                      +{order.orderItems.length - 2} more item(s). Click "View Order Details" to see all.
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="text-center py-8">

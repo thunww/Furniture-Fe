@@ -15,6 +15,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import productApi from "../../../../api/VendorAPI/productApi";
+import revenueApi from "../../../../api/VendorAPI/revenueApi";
 
 const VendorProductManagement = () => {
   const navigate = useNavigate();
@@ -37,6 +38,7 @@ const VendorProductManagement = () => {
     totalPages: 0,
     currentCount: 0,
   });
+  const [totalRevenue, setTotalRevenue] = useState(null);
 
   // Debounce searchTerm
   useEffect(() => {
@@ -64,6 +66,32 @@ const VendorProductManagement = () => {
       }
     };
     fetchCategories();
+  }, []);
+
+  // Fetch yearly revenue for current year and compute total
+  useEffect(() => {
+    const fetchRevenue = async () => {
+      try {
+        const year = new Date().getFullYear();
+        const resp = await revenueApi.getMonthlyRevenue(year);
+        const data = resp && resp.data ? resp.data : resp;
+        // Support both shapes: { success:true, data: { revenue: [...] } } or { year, revenue }
+        let revenueArray = [];
+        if (data && data.success && data.data && Array.isArray(data.data.revenue)) {
+          revenueArray = data.data.revenue;
+        } else if (data && Array.isArray(data.revenue)) {
+          revenueArray = data.revenue;
+        }
+
+        const total = revenueArray.reduce((sum, v) => sum + (parseFloat(v) || 0), 0);
+        setTotalRevenue(total);
+      } catch (error) {
+        console.error("Error fetching monthly revenue:", error);
+        setTotalRevenue(0);
+      }
+    };
+
+    fetchRevenue();
   }, []);
 
   // Fetch products
@@ -375,7 +403,7 @@ const VendorProductManagement = () => {
                   <div>
                     <p className="text-sm text-gray-600">Total Revenue</p>
                     <p className="text-2xl font-bold text-gray-900">
-                      156.235.200 đ
+                      {totalRevenue != null ? formatPrice(totalRevenue) : "—"}
                     </p>
                   </div>
                 </div>
