@@ -296,14 +296,6 @@ const Header = () => {
                   <span>Home</span>
                 </Link>
                 <Link
-                  to="/vendor/user-profile"
-                  className="flex items-center gap-3 px-4 py-2 hover:bg-gray-100"
-                  onClick={handleMenuItemClick}
-                >
-                  <FaUserCircle className="text-gray-500" />
-                  <span>My Profile</span>
-                </Link>
-                <Link
                   to="/vendor/shop-profile"
                   className="flex items-center gap-3 px-4 py-2 hover:bg-gray-100"
                   onClick={handleMenuItemClick}

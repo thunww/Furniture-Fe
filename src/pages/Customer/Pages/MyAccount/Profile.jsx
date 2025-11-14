@@ -255,7 +255,9 @@ const Profile = () => {
             <h3 className="text-xl font-bold text-gray-800 mb-1">
               {profileData.first_name} {profileData.last_name}
             </h3>
-            <p className="text-gray-500 text-sm mb-6">User ID: {userId}</p>
+            <p className="text-gray-500 text-sm mb-6">
+              Username: {user?.username || user?.user_name || user?.email || userId}
+            </p>
 
             {isEditing ? (
               <div className="flex gap-3 w-full mt-4">
