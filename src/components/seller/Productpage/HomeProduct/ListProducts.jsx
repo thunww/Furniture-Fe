@@ -507,6 +507,25 @@ const VendorProductManagement = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {products.map((product) => {
+                  const hasVariants =
+                    Array.isArray(product.variants) &&
+                    product.variants.length > 0;
+
+                  if (!hasVariants) {
+                    console.warn(
+                      "Product missing variants and cannot be rendered",
+                      product
+                    );
+                    return (
+                      <div
+                        key={product.id}
+                        className="bg-white rounded-lg border border-dashed border-gray-300 p-4 text-center text-sm text-gray-500"
+                      >
+                        Variant data is incomplete for this product.
+                      </div>
+                    );
+                  }
+
                   const mainVariant = product.variants[0];
                   const originalPrice = parseFloat(mainVariant.price);
                   const discountedPrice = calculateDiscountedPrice(
@@ -539,7 +558,8 @@ const VendorProductManagement = () => {
 
                         <img
                           src={
-                            product.variants[0]?.image ||
+                            mainVariant.image ||
+                            mainVariant.image_url ||
                             "https://via.placeholder.com/300x200?text=No+Image"
                           }
                           alt={product.name}
