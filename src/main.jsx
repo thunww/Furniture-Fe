@@ -13,10 +13,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     <Provider store={store}>
       <BrowserRouter>
         <GoogleReCaptchaProvider
-          reCaptchaKey={
-            import.meta.env.VITE_RECAPTCHA_SITE_KEY ||
-            "6LdXDAUsAAAAAO2GKvzhUazfUN55NlCnnUxL6oVI"
-          }
+          reCaptchaKey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
           language="vi"
           useRecaptchaNet={false}
           scriptProps={{
