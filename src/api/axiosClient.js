@@ -1,28 +1,41 @@
 import axios from "axios";
 
-const BACKEND_PORT = import.meta.env.VITE_BACKEND_PORT || "8080";
-const API_URL =
-  import.meta.env.VITE_API_URL || `http://localhost:${BACKEND_PORT}/api/v1`;
+/**
+ * ================================
+ * BASE URL logic cho Local + Docker
+ * ================================
+ */
+
+// 1) Khi chạy LOCAL (npm run dev)
+// → import.meta.env.VITE_API_URL có giá trị → dùng local backend
+let API_URL = import.meta.env.VITE_API_URL;
+
+// 2) Khi chạy DOCKER → không có VITE_API_URL
+// → FE phải gọi BE qua service name "backend"
+if (!API_URL) {
+  API_URL = "http://backend:5000/api/v1";
+}
+
+console.log("🔗 FE đang dùng API:", API_URL);
 
 const axiosClient = axios.create({
   baseURL: API_URL,
   headers: {
     "Content-Type": "application/json",
   },
-  withCredentials: true, // Tự động gửi cookie (accessToken, refreshToken)
+  withCredentials: true, // Tự động gửi cookie
   timeout: 10000,
 });
 
 // ========= REQUEST =========
 axiosClient.interceptors.request.use(
   (config) => {
-    // Có thể thêm Authorization header nếu cần
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// ========= RESPONSE =========
+// ========= RESPONSE (Refresh Token Logic) =========
 let isRefreshing = false;
 let failedQueue = [];
 
@@ -38,25 +51,20 @@ axiosClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Nếu không có phản hồi (network lỗi)
     if (!error.response) return Promise.reject(error);
 
-    // Không xử lý lỗi từ chính endpoint refresh-token
     if (originalRequest.url === "/auth/refresh-token") {
       return Promise.reject(error);
     }
 
-    // Nếu là 401 mà chưa login → đừng gọi refresh
     const hasRefresh = document.cookie.includes("refreshToken=");
+
     if (!hasRefresh) {
-      // 🚫 Không có refreshToken cookie, bỏ qua retry
       return Promise.reject(error);
     }
 
-    // Nếu là 401 (Unauthorized)
     if (error.response.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
-        // Nếu đang có request refresh khác → chờ xong rồi retry
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         })
@@ -68,15 +76,11 @@ axiosClient.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        // Gọi refresh token endpoint
         await axiosClient.post("/auth/refresh-token");
-
-        // Sau khi refresh xong → retry lại request cũ
         processQueue(null, true);
         return axiosClient(originalRequest);
       } catch (err) {
         processQueue(err, null);
-        // Để Redux hoặc FE xử lý logout, không redirect ở đây
         return Promise.reject(err);
       } finally {
         isRefreshing = false;
