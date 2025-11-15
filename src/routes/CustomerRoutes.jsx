@@ -90,7 +90,7 @@ const CustomerRoutes = () => {
             <Route
               path="forgot-password"
               exact={true}
-              element={<ForgotPassword />}
+              element={<ForgotPassword />}  
             />
             <Route
               path="reset-password"
